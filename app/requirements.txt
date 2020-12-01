@@ -1,0 +1,5 @@
+pymodbus
+opencv-contrib-python
+imutils
+tensorflow==2.3
+sqlite

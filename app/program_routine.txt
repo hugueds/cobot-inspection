@@ -1,0 +1,18 @@
+Start Camera
+Start Robot communication
+Check Robot communication
+Send Robot to home position
+Robot awaits in home position
+
+Load All available models on memory
+
+New trigger from external signal (button, new serial, etc)
+Get the parameters
+Get all the part numbers
+Get all the poses based on the parameters
+move to position N until it finds OK
+If takes more than N seconds, raise error
+wait until all operations are done
+
+Save Results
+
