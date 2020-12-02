@@ -1,5 +1,8 @@
+from datetime import datetime
 import cv2 as cv
 from imutils.video.webcamvideostream import WebcamVideoStream
+
+image_folder = 'captures'
 
 class Camera:
 
@@ -25,8 +28,14 @@ class Camera:
         self.frame = self.stream.read()
         return self.frame
 
+    def draw_on_image(self):
+        pass
+
+    def save_image(self, parameter=''):
+        dt = datetime.now()
+        file_name = dt.strftime("%Y-%m-%d_%h-%M-%s_" + parameter)
+        path = image_folder + '/' + file_name
+        cv.imwrite(file_name, self.frame)        
+
     def display(self):
         cv.imshow(self.window_name, self.frame)    
-
-    def classify(self, model): # should it be in this class?
-        pass

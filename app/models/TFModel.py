@@ -44,7 +44,7 @@ class TFModel:
             self.default_graph_file = config['models']['graph_file']                  
             
         except Exception as ex:            
-            logging.error('TFModel __init__::Invalid Model Configuration::'+str(ex))
+            logging.error('TFModel::__init__::Invalid Model Configuration::'+str(ex))
     
     def predict(self, image):        
         image = cv.resize(image, (224,224), cv.INTER_AREA)
