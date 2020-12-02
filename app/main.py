@@ -1,10 +1,9 @@
-from models.cobot import CobotStatus, PositionStatus
 import os
 from datetime import datetime
 from time import sleep
 import logging
 import cv2 as cv
-from models import Camera, Cobot, State
+from models import Camera, Cobot, State, CobotStatus, PositionStatus
 
 FORMAT = ('%(asctime)-15s %(threadName)-15s %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
 
@@ -25,8 +24,7 @@ def main():
     start_datetime = datetime.now()
     final_datetime = start_datetime
     pose_times = []
-    component_unit = ''
-    life_beat = -1
+    component_unit = ''    
     
     # load CU image Model
     camera = Camera()
@@ -60,15 +58,14 @@ def main():
 
         # read and write modbus
         cobot.read_interface()
-        life_beat = life_beat + 1 if life_beat <= 1000 else 0
-        cobot.update_interface(life_beat, state)
+        cobot.update_interface(state)
 
         # read a break condition / keyboard
         if cobot.status != CobotStatus.RUNNING:
             print('Cobot is not ready for work...')
             sleep(1)
 
-        if cobot.status == CobotStatus.EMERGENCY_STOPPED:
+        if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
             print('Emergency stop')
             break        
         
@@ -78,6 +75,7 @@ def main():
         if state == State.WAITING_PARAMETER:
             # identify CU number/model 
             # load popid + CU information            
+            component_unit = ''
             parameter_list = ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
             program_list = [x[4:6] for x in parameter_list] # carrega a lista de LTs e separa a lista de parametros
             total_programs = len(program_list)            
@@ -96,11 +94,12 @@ def main():
             # move to identify CU model (optional)
             # load keras model for the CU     
             # clear the pictures folder
+            program = 0
             cobot.set_program(program)  # move to waiting position
             state = State.MOVING_TO_WAITING
             
         elif state == State.MOVING_TO_WAITING:
-            if cobot.wait_position:
+            if cobot.position_status == PositionStatus.WAITING:
                 if program_index < total_programs:
                     program = program_list[program_index]
                     cobot.set_program(program)
@@ -110,7 +109,7 @@ def main():
                     state = State.PROCESSING_IMAGES
 
         elif state == State.MOVING_TO_POSE:
-            if cobot.pose_position:                
+            if cobot.position_status == PositionStatus.POSE:
                 state = State.COLLECTING_IMAGES
         
         elif state == State.COLLECTING_IMAGES:

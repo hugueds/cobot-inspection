@@ -35,10 +35,13 @@ class CobotStatus(Enum):
 
 class Cobot:
 
+    life_beat = -1
     status = 0
+    move_status = 0
     selected_program = 0
     running_program = 0
     modbus_client = None
+    emergency = False
 
     position_status = PositionStatus.NOT_DEFINED
 
@@ -90,6 +93,9 @@ class Cobot:
         elif move_type == 'linear':
             pass
 
+    def __read_coil(self, address):
+        return self.modbus_client.read_coils(address)
+
     def __read_register(self, address):
         try:
             return self.modbus_client.read_holding_registers(address, count=1)
@@ -103,8 +109,12 @@ class Cobot:
             print(e)
 
     def read_interface(self):
+        self.status = self.__read_coil(ModbusInterface.COBOT_STATUS)
         self.position_status = self.__read_register(ModbusInterface.POSITION_STATUS)
+        self.move_status = self.__read_register(ModbusInterface.MOVE_STATUS)
+        self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM)
 
-    def update_interface(self, life_beat, state):
-        self.__write_register(ModbusInterface.LIFE_BEAT, life_beat)
+    def update_interface(self, state):
+        self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
+        self.__write_register(ModbusInterface.LIFE_BEAT, self.life_beat)
         self.__write_register(ModbusInterface.POSITION_STATUS, state)

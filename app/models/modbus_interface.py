@@ -26,7 +26,7 @@ class ModbusInterface(Enum):
     VARIANT = 137  # ->
 
     POSITION_STATUS = 200 # C -> 0 - HOME, 1 - WAITING, 2 - POSE, 3 - MOVING
-    COBOT_STATUS = 201  # C-> RUNNING, STOPPER, WAITING
+    MOVE_STATUS = 201  # C-> RUNNING, STOPPED, WAITING
     RUNNING_PROGRAM = 202  # C ->
     POSE_1 = 203  # C -> HOW TO GET PROPERLY
     POSE_2 = 204  # C -> HOW TO GET PROPERLY
@@ -37,3 +37,8 @@ class ModbusInterface(Enum):
     POSE_SECONDS = 209  # C ->
     JOB_SECONDS = 210  # C ->
     SPEED = 211  # C ->
+
+    COBOT_STATUS = 258 # C -> 
+    IS_SECURITY_STOPPED  = 261 # C ->
+    IS_EMERGENCY_STOPPED  = 262 # C ->
+    
