@@ -34,7 +34,7 @@ def main():
     cobot.connect()
 
     cobot.read_interface()
-    cobot.update_interface(life_beat, state)
+    cobot.update_interface(state)
 
     # check if robot is on running State
     while cobot.status != CobotStatus.RUNNING:
@@ -77,7 +77,7 @@ def main():
             # load popid + CU information            
             component_unit = ''
             parameter_list = ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
-            program_list = [x[4:6] for x in parameter_list] # carrega a lista de LTs e separa a lista de parametros
+            program_list = [int(x[5:7]) for x in parameter_list] # carrega a lista de LTs e separa a lista de parametros
             total_programs = len(program_list)            
             parameter_found = True # Check if all parameters are correct
             # Print total programs
@@ -103,7 +103,6 @@ def main():
                 if program_index < total_programs:
                     program = program_list[program_index]
                     cobot.set_program(program)
-                    program_index += 1                    
                     state = State.MOVING_TO_POSE        
                 else:
                     state = State.PROCESSING_IMAGES
@@ -143,6 +142,7 @@ def main():
             final_datetime = datetime.now()
             total_time = (start_datetime - final_datetime).seconds
             print('Total operation time: %d', total_time)
+            program_index += 1                    
             state = State.WAITING_PARAMETER          
 
     print('Finishing Program')                 

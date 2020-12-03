@@ -1,15 +1,15 @@
 from enum import Enum, unique
 
 @unique
-class State(Enum):    
+class AppState(Enum):    
     INITIAL = 0
     WAITING_PARAMETER = 1
-    PARAMETER_LOADED = 1
-    MOVING_TO_WAITING = 2
-    MOVING_TO_POSE = 2
-    COLLECTING_IMAGES = 3
-    PROCESSING_IMAGES = 3
-    FINISHED = 3
+    PARAMETER_LOADED = 2
+    MOVING_TO_WAITING = 3
+    MOVING_TO_POSE = 4
+    COLLECTING_IMAGES = 5
+    PROCESSING_IMAGES = 6
+    FINISHED = 7
     ERROR = -1
     DISCONNECTED = -2
     EMERGENCY_STOP = -3

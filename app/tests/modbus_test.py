@@ -1,16 +1,21 @@
 from models import Cobot
 from time import sleep
 
-ip = '10.8.66.212'
 
-cobot = Cobot(ip)
-cobot.connect()
+def run():
 
-counter = 0
+    cobot = Cobot()
+    cobot.connect()
 
-while True:
-    sleep(1)
-    reg = cobot.read_register(129)
-    cobot._write_register(129, counter)
-    print(reg.registers)
-    counter += 1    
+    counter = 0
+
+    while True:
+        sleep(1)
+        reg = cobot.modbus_client.read_holding_registers(258, count=1)
+        # reg = cobot.__read_register(129)        
+        # cobot._write_register(129, counter)
+        print(reg.registers[0])
+        counter += 1    
+
+
+        

@@ -1,37 +1,8 @@
 from enum import Enum
 import yaml
 from pymodbus.client.sync import ModbusTcpClient
-from .modbus_interface import ModbusInterface
-
-
-class Pose:
-    def __init__(self, base, shoulder, elbow, wrist_1, wrist_2, wrist_3) -> None:
-        self.base = base
-        self.shoulder = shoulder
-        self.elbow = elbow
-        self.wrist_1 = wrist_1
-        self.wrist_2 = wrist_2
-        self.wrist_3 = wrist_3
-
-class PositionStatus(Enum):
-    HOME = 0
-    WAITING = 1
-    POSE = 2
-    MOVING = 3
-    NOT_DEFINED = -1
-
-class CobotStatus(Enum):
-    DISCONNECTED = 0
-    CONFIRM_SAFETY = 1
-    BOOTING = 2
-    POWER_OFF = 3
-    POWER_ON = 4
-    IDLE = 5
-    BACKDRIVE = 6
-    RUNNING = 7
-    SECURE_STOPPED = 8
-    EMERGENCY_STOPPED = 9
-
+from models import Pose
+from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
 
 class Cobot:
 
@@ -53,24 +24,24 @@ class Cobot:
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
         self.ip = config['cobot']['ip']
-        self.port = int(config['port'])
+        self.port = int(config['cobot']['modbus_port'])
 
     def connect(self):
         try:
+            print(f'Robot {self.ip} trying to connect')  # Replace with log
             self.modbus_client = ModbusTcpClient(self.ip, self.port)
-            print(f'Robot {self.ip} connected')  # Replace with log
         except Exception as e:
-            print(e)
+            return print('Cobot::connect::', str(e))
 
     def disconnect(self):
         self.modbus_client.close()
 
     def set_program(self, program):
         self.selected_program = program
-        self.__write_register(ModbusInterface.SELECTED_PROGRAM, program)
-        trigger = self.__read_register(ModbusInterface.START_TRIGGER)
+        self.__write_register(ModbusInterface.SELECTED_PROGRAM.value, program)
+        trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
         if not trigger:
-            self.__write_register(ModbusInterface.START_TRIGGER, 1)
+            self.__write_register(ModbusInterface.START_TRIGGER.value, 1)
             return
         print('Trigger is SET on Cobot') # debug
         
@@ -87,7 +58,7 @@ class Cobot:
         # write_register
         pass
 
-    def move(self, move_type, pose: Pose):
+    def move(self, move_type, pose: Pose):        
         if move_type == 'joint':
             pass
         elif move_type == 'linear':
@@ -98,23 +69,26 @@ class Cobot:
 
     def __read_register(self, address):
         try:
-            return self.modbus_client.read_holding_registers(address, count=1)
+            reg = self.modbus_client.read_holding_registers(address, count=1)
+            return reg.registers[0]
         except Exception as e:
-            return print(e)
+            return print('Cobot::__read_register::', str(e))
+
 
     def __write_register(self, address, value):
         try:
             self.modbus_client.write_register(address, value)
         except Exception as e:
-            print(e)
+            print('Cobot::__write_register::', str(e))
 
     def read_interface(self):
-        self.status = self.__read_coil(ModbusInterface.COBOT_STATUS)
-        self.position_status = self.__read_register(ModbusInterface.POSITION_STATUS)
-        self.move_status = self.__read_register(ModbusInterface.MOVE_STATUS)
-        self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM)
+        self.status = CobotStatus(self.__read_register(ModbusInterface.COBOT_STATUS.value))
+        self.position_status = PositionStatus(self.__read_register(ModbusInterface.POSITION_STATUS.value))
+        # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
+        # self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
 
-    def update_interface(self, state):
+    def update_interface(self, state: State):
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
-        self.__write_register(ModbusInterface.LIFE_BEAT, self.life_beat)
-        self.__write_register(ModbusInterface.POSITION_STATUS, state)
+        self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
+        self.__write_register(ModbusInterface.PROGRAM_STATE.value, state.value)
+        self.__write_register(ModbusInterface.POSITION_STATUS.value, state.value)

@@ -1,6 +1,5 @@
 from .cobot import Cobot
 
-
 class ModBusUpdater:
 
     started = False
