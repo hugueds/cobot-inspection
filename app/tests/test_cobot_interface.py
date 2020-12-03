@@ -1,26 +1,39 @@
-from models import Camera, Cobot, State, CobotStatus, PositionStatus
+from controller import Controller
 from time import sleep
 from datetime import datetime
+from models import Camera, Cobot, Pose
+from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
+from controller import Controller
+import keyboard
 
-def run():
+cobot = Cobot()
+controller = Controller()
 
-    state = State.INITIAL
 
-    cobot = Cobot()
+def test(e: keyboard.KeyboardEvent):
+    global cobot
+    print(e.name)
+    controller.state == AppState.WAITING_PARAMETER
+    cobot.set_program(int(e.name))
+    print('ok')
+
+def run():    
+
+
+    keyboard.on_press(test)
+
     cobot.connect()
 
-    state = State.WAITING_PARAMETER
-    parameter_list = ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
-    program_list = [int(x[5:7]) for x in parameter_list] # carrega a lista de LTs e separa a lista de parametros
-    total_programs = len(program_list) 
-    program_index = 0
+    # controller.start_modbus_thread(cobot)
 
+    controller.state = AppState.INITIAL
+    controller.state = AppState.WAITING_PARAMETER
 
     while True:
 
         # read and write modbus
         cobot.read_interface()
-        cobot.update_interface(state)
+        cobot.update_interface(controller.state)
 
         # read a break condition / keyboard
         if cobot.status != CobotStatus.RUNNING:        
@@ -34,44 +47,55 @@ def run():
         # write information on camera window
 
         # wait for a new product    
-        if state == State.WAITING_PARAMETER:
+        if controller.state == AppState.WAITING_PARAMETER:
             print('Loading parameters')
+            controller.load_parameters()
             sleep(5)
-            state = State.PARAMETER_LOADED
+            controller.state = AppState.PARAMETER_LOADED            
             
-            
-        elif state == State.PARAMETER_LOADED:
+        elif controller.state == AppState.PARAMETER_LOADED:
             print('Parameters loaded, moving to wait position')
-            program = 0
-            cobot.set_program(program)  # move to waiting position
-            state = State.MOVING_TO_WAITING
+            controller.program = 0
+            cobot.set_program(controller.program)  # move to waiting position
+            controller.state = AppState.MOVING_TO_WAITING
             
-        elif state == State.MOVING_TO_WAITING:
-            print('moving to waiting')
+        elif controller.state == AppState.MOVING_TO_WAITING:
+            print('Moving to waiting position...')
+            print('Position Status', cobot.position_status)
             if cobot.position_status == PositionStatus.WAITING:
-                if program_index < total_programs:
-                    program = program_list[program_index]
-                    cobot.set_program(program)
-                    state = State.MOVING_TO_POSE        
+                if controller.program_index < controller.total_programs:
+                    controller.program = controller.program_list[controller.program_index]
+                    cobot.set_program(controller.program)
+                    controller.state = AppState.MOVING_TO_POSE        
                 else:
-                    state = State.PROCESSING_IMAGES
+                    controller.state = AppState.PROCESSING_IMAGES
 
-        elif state == State.MOVING_TO_POSE:
-            print('moving to pose', program_index + 1)
+        elif controller.state == AppState.MOVING_TO_POSE:
+            print('Moving to Pose', controller.program_index + 1)
             if cobot.position_status == PositionStatus.POSE:
-                print('moving to pose')
-                state = State.COLLECTING_IMAGES
+                print('Pose reached', controller.program_index + 1)
+                controller.state = AppState.COLLECTING_IMAGES
         
-        elif state == State.COLLECTING_IMAGES:
-            print('collecting images')
+        elif controller.state == AppState.COLLECTING_IMAGES:
+            print('Collecting Image')
             sleep(5)
-            parameter = parameter_list[program_index]
-            program_index += 1                    
-            cobot.move_to_waiting()          
-            state = State.MOVING_TO_WAITING
+            controller.parameter = controller.parameter_list[controller.program_index]
+            controller.program_index += 1                    
+            cobot.move_to_waiting()
+            controller.state = AppState.MOVING_TO_WAITING
 
-        elif state == State.PROCESSING_IMAGES:
+        elif controller.state == AppState.PROCESSING_IMAGES:
             print('Processing images')
             sleep(5)
+            controller.state = AppState.FINISHED
+            print('Job Finished!')
 
-        sleep(1)
+        elif controller.state == AppState.FINISHED:
+            print('Waiting for a new Job')
+            sleep(1)
+
+        sleep(0.5)
+        
+            
+
+

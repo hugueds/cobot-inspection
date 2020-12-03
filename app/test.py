@@ -1,4 +1,3 @@
-from tests import modbus_test
 from tests import test_cobot_interface
 
 

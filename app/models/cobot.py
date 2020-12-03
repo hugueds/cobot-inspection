@@ -1,7 +1,6 @@
 from enum import Enum
 import yaml
 from pymodbus.client.sync import ModbusTcpClient
-from models import Pose
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
 
 class Cobot:
@@ -18,7 +17,7 @@ class Cobot:
 
     pose_seconds = 0
     job_seconds = 0
-    pose = Pose(0, 0, 0, 0, 0, 0)
+    # pose = Pose(0, 0, 0, 0, 0, 0)
 
     def __init__(self, config_path='config.yml') -> None:
         with open(config_path, 'r') as file:
@@ -58,7 +57,7 @@ class Cobot:
         # write_register
         pass
 
-    def move(self, move_type, pose: Pose):        
+    def move(self, move_type, pose):        
         if move_type == 'joint':
             pass
         elif move_type == 'linear':
@@ -87,7 +86,7 @@ class Cobot:
         # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
         # self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
 
-    def update_interface(self, state: State):
+    def update_interface(self, state: AppState):
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
         self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
         self.__write_register(ModbusInterface.PROGRAM_STATE.value, state.value)

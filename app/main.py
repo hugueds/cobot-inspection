@@ -3,7 +3,10 @@ from datetime import datetime
 from time import sleep
 import logging
 import cv2 as cv
-from models import Camera, Cobot, State, CobotStatus, PositionStatus
+from controller import Controller
+from models import Camera, Cobot
+from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
+
 
 FORMAT = ('%(asctime)-15s %(threadName)-15s %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
 
@@ -12,21 +15,9 @@ log = logging.getLogger()
 
 # TODO: Create a thread for Modbus writing and communication
 
-def main():
+def main():            
 
-    state = State.INITIAL
-    operation_result = 0 # 0 -> None, 1 -> OK, 2 -> NOT_OK
-    total_programs = 0
-    program_list = []
-    parameter_list = []
-    program = '00'
-    program_index = 0
-    start_datetime = datetime.now()
-    final_datetime = start_datetime
-    pose_times = []
-    component_unit = ''    
-    
-    # load CU image Model
+    controller = Controller()
     camera = Camera()
     camera.start()
 
@@ -34,7 +25,7 @@ def main():
     cobot.connect()
 
     cobot.read_interface()
-    cobot.update_interface(state)
+    cobot.update_interface(controller.state)
 
     # check if robot is on running State
     while cobot.status != CobotStatus.RUNNING:
@@ -43,7 +34,7 @@ def main():
 
     # check if robot is in Home Position if not move there
     if not cobot.position_status == PositionStatus.HOME:
-        state = State.MOVING
+        controller.state = AppState.MOVING
         home_program = 99
         cobot.set_program(home_program)
 
@@ -52,13 +43,13 @@ def main():
         print('Waiting Cobot in Home position')
         sleep(5)
 
-    state = State.WAITING_PARAMETER
+    controller.state = AppState.WAITING_PARAMETER
 
     while True: # Put another condition
 
         # read and write modbus
         cobot.read_interface()
-        cobot.update_interface(state)
+        cobot.update_interface(controller.state)
 
         # read a break condition / keyboard
         if cobot.status != CobotStatus.RUNNING:
@@ -72,54 +63,54 @@ def main():
         # write information on camera window
 
         # wait for a new product    
-        if state == State.WAITING_PARAMETER:
+        if controller.state == AppState.WAITING_PARAMETER:
             # identify CU number/model 
             # load popid + CU information            
-            component_unit = ''
-            parameter_list = ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
-            program_list = [int(x[5:7]) for x in parameter_list] # carrega a lista de LTs e separa a lista de parametros
-            total_programs = len(program_list)            
+            controller.component_unit = ''
+            controller.parameter_list = ['PV110011', 'PV110021', 'PV110031'] #, 'PV110041', 'PV110051', 'PV110061'] # Example
+            controller.program_list = [int(x[5:7]) for x in controller.parameter_list] # carrega a lista de LTs e separa a lista de parametros
+            controller.total_programs = len(controller.program_list)            
             parameter_found = True # Check if all parameters are correct
             # Print total programs
             if parameter_found:
-                state = State.PARAMETER_LOADED
+                controller.state = AppState.PARAMETER_LOADED
             else:
-                state = State.PARAMETER_NOT_FOUND
+                controller.state = AppState.PARAMETER_NOT_FOUND
             
-        elif state == State.PARAMETER_LOADED:
-            operation_result = 0
-            program_index = 0
-            pose_times = []
-            start_datetime = datetime.now()
+        elif controller.state == AppState.PARAMETER_LOADED:
+            controller.operation_result = 0
+            controller.program_index = 0
+            controller.pose_times = []
+            controller.start_datetime = datetime.now()
             # move to identify CU model (optional)
             # load keras model for the CU     
             # clear the pictures folder
             program = 0
             cobot.set_program(program)  # move to waiting position
-            state = State.MOVING_TO_WAITING
+            controller.state = AppState.MOVING_TO_WAITING
             
-        elif state == State.MOVING_TO_WAITING:
+        elif controller.state == AppState.MOVING_TO_WAITING:
             if cobot.position_status == PositionStatus.WAITING:
-                if program_index < total_programs:
-                    program = program_list[program_index]
+                if controller.program_index < controller.total_programs:
+                    program = controller.program_list[controller.program_index]
                     cobot.set_program(program)
-                    state = State.MOVING_TO_POSE        
+                    controller.state = AppState.MOVING_TO_POSE        
                 else:
-                    state = State.PROCESSING_IMAGES
+                    controller.state = AppState.PROCESSING_IMAGES
 
-        elif state == State.MOVING_TO_POSE:
+        elif controller.state == AppState.MOVING_TO_POSE:
             if cobot.position_status == PositionStatus.POSE:
-                state = State.COLLECTING_IMAGES
+                controller.state = AppState.COLLECTING_IMAGES
         
-        elif state == State.COLLECTING_IMAGES:
-            parameter = parameter_list[program_index]
+        elif controller.state == AppState.COLLECTING_IMAGES:
+            parameter = controller.parameter_list[controller.program_index]
             camera.read()
             camera.save_image(parameter)
             cobot.move_to_waiting()            
-            pose_times.append(datetime.now())
-            state = State.MOVING_TO_WAITING
+            controller.pose_times.append(datetime.now())
+            controller.state = AppState.MOVING_TO_WAITING
 
-        elif state == State.PROCESSING_IMAGES:
+        elif controller.state == AppState.PROCESSING_IMAGES:
             # Load all pictures inside a folder ... Load the model here?
             pictures = []            
             results = []
@@ -138,12 +129,12 @@ def main():
             # write a footer on picture describing the results
             # save all picures to a folder containing POPID and CU
             # save log to database
-            operation_result = 1 if True else False
-            final_datetime = datetime.now()
-            total_time = (start_datetime - final_datetime).seconds
+            controller.operation_result = 1 if True else False
+            controller.final_datetime = datetime.now()
+            total_time = (controller.start_datetime - controller.final_datetime).seconds
             print('Total operation time: %d', total_time)
-            program_index += 1                    
-            state = State.WAITING_PARAMETER          
+            controller.program_index += 1                    
+            controller.state = AppState.WAITING_PARAMETER          
 
     print('Finishing Program')                 
         
