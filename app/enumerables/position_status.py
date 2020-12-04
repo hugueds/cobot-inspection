@@ -8,4 +8,4 @@ class PositionStatus(Enum):
     NOT_FOUND = 4
     NOT_FOUND2 = 5
     NOT_DEFINED = -1
-    ERROR = None
+    None = None

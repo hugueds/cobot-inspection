@@ -11,3 +11,4 @@ class CobotStatus(Enum):
     RUNNING = 7
     SECURE_STOPPED = 8
     EMERGENCY_STOPPED = 9
+    NONE = None
