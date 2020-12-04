@@ -61,10 +61,7 @@ class Cobot:
         if move_type == 'joint':
             pass
         elif move_type == 'linear':
-            pass
-
-    def __read_coil(self, address):
-        return self.modbus_client.read_coils(address)
+            pass    
 
     def __read_register(self, address):
         try:
@@ -72,7 +69,6 @@ class Cobot:
             return reg.registers[0]
         except Exception as e:
             return print('Cobot::__read_register::', str(e))
-
 
     def __write_register(self, address, value):
         try:

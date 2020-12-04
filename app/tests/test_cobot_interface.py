@@ -11,14 +11,18 @@ controller = Controller()
 
 
 def test(e: keyboard.KeyboardEvent):
-    global cobot
-    print(e.name)
-    controller.state == AppState.WAITING_PARAMETER
-    cobot.set_program(int(e.name))
-    print('ok')
+    global cobot, controller        
+    if e.name == 'enter':
+        controller.state = AppState.WAITING_INPUT
+    if e.name == 'm':
+       controller.manual_mode = not controller.manual_mode 
+       status = 'manual' if controller.manual_mode else 'auto'
+       print('Controller set to ', status)
+    if e.name.isdigit() and controller.manual_mode:
+        cobot.set_program(int(e.name))        
 
-def run():    
 
+def run():
 
     keyboard.on_press(test)
 
@@ -27,7 +31,9 @@ def run():
     # controller.start_modbus_thread(cobot)
 
     controller.state = AppState.INITIAL
-    controller.state = AppState.WAITING_PARAMETER
+    controller.state = AppState.WAITING_INPUT
+
+    controller.manual_mode = True
 
     while True:
 
@@ -39,15 +45,28 @@ def run():
         if cobot.status != CobotStatus.RUNNING:        
             print('Cobot is not ready for work... Status:', cobot.status)
             sleep(1)
+            continue
 
         if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
             print('Emergency stop')
-            break        
+            sleep(1)
+            continue
+
+        if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
+            print('Cobot in Manual mode')
+            sleep(1)
+            continue
         
         # write information on camera window
 
+        if controller.state == AppState.WAITING_INPUT and not controller.manual_mode:
+            # wait for mona/scanner trigger
+            print('New Product')
+            sleep(2)
+            controller.state = AppState.WAITING_PARAMETER        
+
         # wait for a new product    
-        if controller.state == AppState.WAITING_PARAMETER:
+        elif controller.state == AppState.WAITING_PARAMETER:
             print('Loading parameters')
             controller.load_parameters()
             sleep(5)
@@ -78,7 +97,7 @@ def run():
         
         elif controller.state == AppState.COLLECTING_IMAGES:
             print('Collecting Image')
-            sleep(5)
+            sleep(1)
             controller.parameter = controller.parameter_list[controller.program_index]
             controller.program_index += 1                    
             cobot.move_to_waiting()
@@ -92,7 +111,8 @@ def run():
 
         elif controller.state == AppState.FINISHED:
             print('Waiting for a new Job')
-            sleep(1)
+            sleep(3)
+            controller.state = AppState.WAITING_INPUT
 
         sleep(0.5)
         

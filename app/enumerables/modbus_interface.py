@@ -12,7 +12,6 @@ class ModbusInterface(Enum):
     # A = Application
 
     START_BYTE = 128
-
     LIFE_BEAT = 129  # A -> INCREASED BY 1
     START_TRIGGER = 130  # A-> 1, C-> 0    
     PROGRAM_STATE = 131  # A -> STATE

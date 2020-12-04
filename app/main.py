@@ -29,8 +29,9 @@ def main():
 
     # check if robot is on running State
     while cobot.status != CobotStatus.RUNNING:
-        print('Cobot is not ready for work... Status: %d', cobot.status)
-        sleep(5)
+        # print('Cobot is not ready for work... Status: %d', cobot.status)
+        log.warning(f'Cobot is not ready for work... Status: {cobot.status}')
+        sleep(2)
 
     # check if robot is in Home Position if not move there
     if not cobot.position_status == PositionStatus.HOME:
@@ -48,31 +49,32 @@ def main():
     while True: # Put another condition
 
         # read and write modbus
-        cobot.read_interface()
+        cobot.read_interface()        
         cobot.update_interface(controller.state)
-
+        
         # read a break condition / keyboard
         if cobot.status != CobotStatus.RUNNING:
-            print('Cobot is not ready for work...')
+            log.warning(f'Cobot is not ready for work... Status: {cobot.status}')
             sleep(1)
+            continue
 
         if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
-            print('Emergency stop')
-            break        
+            # print('Emergency stop')
+            log.warning(f'Cobot is under emergy Stop... Status: {cobot.status}')
+            sleep(5)
+            continue                 
         
         # write information on camera window
 
+        if controller.state == AppState.WAITING_INPUT:
+            # Change to manual            
+            controller.state = AppState.WAITING_PARAMETER
+
         # wait for a new product    
-        if controller.state == AppState.WAITING_PARAMETER:
-            # identify CU number/model 
-            # load popid + CU information            
-            controller.component_unit = ''
-            controller.parameter_list = ['PV110011', 'PV110021', 'PV110031'] #, 'PV110041', 'PV110051', 'PV110061'] # Example
-            controller.program_list = [int(x[5:7]) for x in controller.parameter_list] # carrega a lista de LTs e separa a lista de parametros
-            controller.total_programs = len(controller.program_list)            
-            parameter_found = True # Check if all parameters are correct
-            # Print total programs
-            if parameter_found:
+        elif controller.state == AppState.WAITING_PARAMETER:
+            log.info('Collecting parameters for POPID')
+            controller.load_parameters()                         
+            if controller.parameters_found:
                 controller.state = AppState.PARAMETER_LOADED
             else:
                 controller.state = AppState.PARAMETER_NOT_FOUND
@@ -85,8 +87,8 @@ def main():
             # move to identify CU model (optional)
             # load keras model for the CU     
             # clear the pictures folder
-            program = 0
-            cobot.set_program(program)  # move to waiting position
+            controller.program = 0
+            cobot.set_program(controller.program)  # move to waiting position
             controller.state = AppState.MOVING_TO_WAITING
             
         elif controller.state == AppState.MOVING_TO_WAITING:
@@ -134,7 +136,7 @@ def main():
             total_time = (controller.start_datetime - controller.final_datetime).seconds
             print('Total operation time: %d', total_time)
             controller.program_index += 1                    
-            controller.state = AppState.WAITING_PARAMETER          
+            controller.state = AppState.WAITING_INPUT                  
 
     print('Finishing Program')                 
         
