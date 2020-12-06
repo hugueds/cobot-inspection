@@ -1,7 +1,9 @@
 from enum import Enum
+from threading import Thread
 import yaml
 from pymodbus.client.sync import ModbusTcpClient
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
+from time import sleep
 
 class Cobot:
 
@@ -18,6 +20,9 @@ class Cobot:
     pose_seconds = 0
     job_seconds = 0
     # pose = Pose(0, 0, 0, 0, 0, 0)
+    thread_running = False
+
+    a = 0
 
     def __init__(self, config_path='config.yml') -> None:
         with open(config_path, 'r') as file:
@@ -34,6 +39,14 @@ class Cobot:
 
     def disconnect(self):
         self.modbus_client.close()
+
+    def start_read_thread(self, counter):                
+        self.thread_running = True
+        self.thread = Thread(target=self.read_interface_2, args=(counter,), daemon=True)
+        self.thread.start()
+
+    def stop_thread(self):
+        self.thread_running = False
 
     def set_program(self, program):
         self.selected_program = program
@@ -81,6 +94,15 @@ class Cobot:
         self.position_status = PositionStatus(self.__read_register(ModbusInterface.POSITION_STATUS.value))
         # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
         # self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
+
+    def read_interface_2(self, c):
+        self.a = c
+        while self.thread_running:
+            self.read_interface()
+            print(str(self.a))
+            self.a += 1
+            sleep(1)
+
 
     def update_interface(self, state: AppState):
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0

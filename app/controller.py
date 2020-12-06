@@ -46,3 +46,6 @@ class Controller:
             self.cobot.update_interface()
             sleep(1)
 
+    def load_images(self):
+        pass
+

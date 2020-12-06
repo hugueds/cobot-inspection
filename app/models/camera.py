@@ -13,7 +13,7 @@ class Camera:
     def __init__(self, config=None):
         self.stream = WebcamVideoStream(self.src, 'WebCam')
 
-    def config_camera(config):
+    def config_camera(self, config):
         pass
 
     def start(self):

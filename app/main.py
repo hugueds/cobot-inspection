@@ -9,11 +9,9 @@ from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
 
 
 FORMAT = ('%(asctime)-15s %(threadName)-15s %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
-
 logging.basicConfig(format=FORMAT)
 log = logging.getLogger()
 
-# TODO: Create a thread for Modbus writing and communication
 
 def main():            
 
@@ -42,6 +40,7 @@ def main():
     while not cobot.position_status == PositionStatus.HOME:
         cobot.read_interface()
         print('Waiting Cobot in Home position')
+        log.info('Waiting Cobot in Home position')
         sleep(5)
 
     controller.state = AppState.WAITING_PARAMETER
@@ -60,7 +59,7 @@ def main():
 
         if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
             # print('Emergency stop')
-            log.warning(f'Cobot is under emergy Stop... Status: {cobot.status}')
+            log.warning(f'Cobot is under Emergency Stop... Status: {cobot.status}')
             sleep(5)
             continue                 
         
@@ -134,16 +133,17 @@ def main():
             controller.operation_result = 1 if True else False
             controller.final_datetime = datetime.now()
             total_time = (controller.start_datetime - controller.final_datetime).seconds
-            print('Total operation time: %d', total_time)
+            # print('Total operation time: %d', total_time)
+            log.info('Total operation time: %d', total_time)
             controller.program_index += 1                    
             controller.state = AppState.WAITING_INPUT                  
 
-    print('Finishing Program')                 
+    log.info('Finishing Program')
         
 
 if __name__ == '__main__':
     try:
         main()        
     except Exception as e:
-        print('Finishing program due error')
-        print(e)
+        log.error('Finishing program due error')
+        log.error(e)
