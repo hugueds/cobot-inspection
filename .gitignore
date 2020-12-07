@@ -1,0 +1,16 @@
+./UR*
+./ID*
+
+ID*
+UR_*
+images
+
+app/__pycache__
+app/.vscode
+app/captures
+app/logs
+app/results
+
+
+
+
