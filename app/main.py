@@ -2,9 +2,8 @@ import os
 from datetime import datetime
 from time import sleep
 import cv2 as cv
-from controller import Controller
-from models import Camera, Cobot
-from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
+from classes import Cobot, Camera, Controller
+from enumerables import PositionStatus, AppState, CobotStatus
 from logger import logger
 
 def main():            
@@ -20,10 +19,9 @@ def main():
     cobot.update_interface(controller.state)
 
     # check if robot is on running State
-    while cobot.status != CobotStatus.RUNNING:
-        # print('Cobot is not ready for work... Status: %d', cobot.status)
+    while cobot.status != CobotStatus.RUNNING:        
         logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
-        sleep(2)
+        sleep(5)
 
     # check if robot is in Home Position if not move there
     if not cobot.position_status == PositionStatus.HOME:
@@ -132,12 +130,12 @@ def main():
             controller.program_index += 1                    
             controller.state = AppState.WAITING_INPUT                  
 
-    logger.info('Finishing Program')
+    logger.info('Finishing Program') # In case of breaking
         
 
 if __name__ == '__main__':
     try:
         main()        
     except Exception as e:
-        logger.error('Finishing program due error')
+        logger.info('Finishing program due error')
         logger.error(e)

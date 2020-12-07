@@ -1,6 +1,6 @@
 app:
   name: 'Cobot Inspection'
-  version: '0.0.1'
+  version: '0.0.2'
   release_date: undefined
   author: 'SSBHPE'
 debug: True
@@ -22,3 +22,7 @@ ml_model:
   size: 100
 database:
   name: 'cobot.db'
+log:
+  name: 'cobot_app'
+  path:
+  
