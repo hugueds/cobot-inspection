@@ -2,7 +2,9 @@
 ./ID*
 
 ID*
+ID*.*
 UR_*
+UR_*/*
 images
 images/*
 
