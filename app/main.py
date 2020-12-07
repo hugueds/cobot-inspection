@@ -1,17 +1,11 @@
 import os
 from datetime import datetime
 from time import sleep
-import logging
 import cv2 as cv
 from controller import Controller
 from models import Camera, Cobot
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
-
-
-FORMAT = ('%(asctime)-15s %(threadName)-15s %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s')
-logging.basicConfig(format=FORMAT)
-log = logging.getLogger()
-
+from logger import logger
 
 def main():            
 
@@ -28,7 +22,7 @@ def main():
     # check if robot is on running State
     while cobot.status != CobotStatus.RUNNING:
         # print('Cobot is not ready for work... Status: %d', cobot.status)
-        log.warning(f'Cobot is not ready for work... Status: {cobot.status}')
+        logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
         sleep(2)
 
     # check if robot is in Home Position if not move there
@@ -40,7 +34,7 @@ def main():
     while not cobot.position_status == PositionStatus.HOME:
         cobot.read_interface()
         print('Waiting Cobot in Home position')
-        log.info('Waiting Cobot in Home position')
+        logger.info('Waiting Cobot in Home position')
         sleep(5)
 
     controller.state = AppState.WAITING_PARAMETER
@@ -53,13 +47,13 @@ def main():
         
         # read a break condition / keyboard
         if cobot.status != CobotStatus.RUNNING:
-            log.warning(f'Cobot is not ready for work... Status: {cobot.status}')
+            logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
             sleep(1)
             continue
 
         if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
             # print('Emergency stop')
-            log.warning(f'Cobot is under Emergency Stop... Status: {cobot.status}')
+            logger.warning(f'Cobot is under Emergency Stop... Status: {cobot.status}')
             sleep(5)
             continue                 
         
@@ -71,7 +65,7 @@ def main():
 
         # wait for a new product    
         elif controller.state == AppState.WAITING_PARAMETER:
-            log.info('Collecting parameters for POPID')
+            logger.info('Collecting parameters for POPID')
             controller.load_parameters()                         
             if controller.parameters_found:
                 controller.state = AppState.PARAMETER_LOADED
@@ -129,21 +123,21 @@ def main():
             # if all pictures are correct, send an OK report
             # write a footer on picture describing the results
             # save all picures to a folder containing POPID and CU
-            # save log to database
+            # save logger to database
             controller.operation_result = 1 if True else False
             controller.final_datetime = datetime.now()
             total_time = (controller.start_datetime - controller.final_datetime).seconds
             # print('Total operation time: %d', total_time)
-            log.info('Total operation time: %d', total_time)
+            logger.info('Total operation time: %d', total_time)
             controller.program_index += 1                    
             controller.state = AppState.WAITING_INPUT                  
 
-    log.info('Finishing Program')
+    logger.info('Finishing Program')
         
 
 if __name__ == '__main__':
     try:
         main()        
     except Exception as e:
-        log.error('Finishing program due error')
-        log.error(e)
+        logger.error('Finishing program due error')
+        logger.error(e)

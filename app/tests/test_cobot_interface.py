@@ -5,6 +5,7 @@ from models import Camera, Cobot, Pose
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
 from controller import Controller
 import keyboard
+from logger import logger
 
 cobot = Cobot()
 controller = Controller()
