@@ -1,6 +1,7 @@
 from enum import Enum
 from threading import Thread
 import yaml
+from models import Pose
 from pymodbus.client.sync import ModbusTcpClient
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
 from time import sleep
@@ -19,7 +20,7 @@ class Cobot:
 
     pose_seconds = 0
     job_seconds = 0
-    # pose = Pose(0, 0, 0, 0, 0, 0)
+    pose = Pose(0, 0, 0, 0, 0, 0)
     thread_running = False
 
     a = 0

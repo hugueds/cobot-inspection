@@ -1,6 +1,6 @@
 from datetime import datetime
 from time import sleep
-from models.cobot import Cobot
+from .cobot import Cobot
 from enumerables import AppState
 from threading import Thread
 

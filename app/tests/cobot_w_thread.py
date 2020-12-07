@@ -1,4 +1,4 @@
-from models import Cobot
+from classes import Cobot
 from time import sleep
 
 

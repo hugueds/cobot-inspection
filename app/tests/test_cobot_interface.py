@@ -1,9 +1,8 @@
-from controller import Controller
 from time import sleep
 from datetime import datetime
-from models import Camera, Cobot, Pose
+from classes import Camera, Cobot, Pose
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
-from controller import Controller
+from classes import Controller
 import keyboard
 from logger import logger
 
