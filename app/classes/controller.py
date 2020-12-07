@@ -23,11 +23,11 @@ class Controller:
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot
-        self.camera = camera
-        self.cobot.start_read_thread()
+        self.camera = camera        
         self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
+        # self.cobot.start_read_thread()
         # self.thread_camera = Thread(target=self.update_cobot_interface, daemon=True)
-        self.thread_cobot.start()
+        # self.thread_cobot.start()
         # self.thread_camera.start()
 
 
@@ -63,4 +63,9 @@ class Controller:
             sleep(0.25)
         else:
             print('Update has ended')
+        
+
+    def start_camera(self):
+        self.camera.display = True
+        self.camera.start()
         

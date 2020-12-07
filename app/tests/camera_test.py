@@ -6,18 +6,10 @@ def run():
 
     cam = Camera()
     ctrl = Controller(camera=cam)
-    
+    ctrl.start_camera()
     while True:
-        a = 'Collecting images'
-        print(a)
+        msg = 'Collecting images'
+                
+        print(msg)
         sleep(1)
 
-
-
-    
-
-    
-
-        
-
-    

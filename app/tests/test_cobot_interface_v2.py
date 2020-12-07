@@ -98,13 +98,13 @@ def run():
         elif controller.state == AppState.COLLECTING_IMAGES:
             print('Collecting Image...')
             sleep(1)
-            controller.parameter = controller.parameter_list[controller.program_index]
-            controller.program_index += 1                    
-            controller.set_program(0)
+            controller.parameter = controller.parameter_list[controller.program_index] # do a new function
+            controller.program_index += 1 # do a new function
+            controller.set_program(0) # do a new function
             controller.set_state(AppState.MOVING_TO_WAITING)
 
         elif controller.state == AppState.PROCESSING_IMAGES:
-            print('Processing images')
+            print('Processing collected images...')
             sleep(5)
             print('Job Finished!')
             controller.set_state(AppState.FINISHED)
