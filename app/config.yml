@@ -18,8 +18,11 @@ cobot:
   ip: '10.8.66.212'
   tcp_port: 
   modbus_port: 502
-ml_model:
-  size: 100
+models:
+  path: 'graph_files'  
+  size: 224
+  channels: 3
+
 database:
   name: 'cobot.db'
 log:

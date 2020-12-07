@@ -1,8 +1,9 @@
+from threading import Thread
 from datetime import datetime
 from time import sleep
-from .cobot import Cobot
 from enumerables import AppState
-from threading import Thread
+from classes.cobot import Cobot
+from classes.camera import Camera
 
 class Controller:
 
@@ -20,17 +21,15 @@ class Controller:
     parameters_found = False
     manual_mode = False
 
-    def __init__(self, cobot: Cobot = None) -> None:
-        self.cobot = cobot        
+    def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
+        self.cobot = cobot
+        self.camera = camera
+        self.cobot.start_read_thread()
+        self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
+        # self.thread_camera = Thread(target=self.update_cobot_interface, daemon=True)
+        self.thread_cobot.start()
+        # self.thread_camera.start()
 
-    def start_modbus_thread(self, cobot: Cobot):
-        self.modbus_thread = True
-        self.thread = Thread(target=self.modbus_update,  daemon=True)
-        self.thread.start()
-        print('Start Reading Modbus')
-    
-    def stop_modbus_thread(self):
-        self.modbus_thread = False
 
     def load_parameters(self):        
         self.parameter_list = self.get_parameter_list()
@@ -43,9 +42,25 @@ class Controller:
     
     def modbus_update(self):
         while self.modbus_thread:
-            self.cobot.update_interface()
+            self.cobot.update_interface()            
             sleep(1)
 
     def load_images(self):
         pass
 
+    def set_program(self, program):
+        self.program = 0
+        self.cobot.set_program(program)
+
+    def set_state(self, state: AppState):
+        self.state = state
+
+    def update_cobot_interface(self):
+        print('Starting Cobot Update Interface')
+        while self.cobot.thread_running and self.cobot.modbus_client.is_socket_open:
+            self.cobot.read_interface()
+            self.cobot.update_interface(self.state)
+            sleep(0.25)
+        else:
+            print('Update has ended')
+        

@@ -2,9 +2,9 @@ from classes import Cobot
 from time import sleep
 
 
-c = Cobot()
 
 def run():    
+    c = Cobot()
     counter = 6
     # c.connect()    
     c.start_read_thread(counter)

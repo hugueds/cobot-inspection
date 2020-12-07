@@ -21,15 +21,15 @@ class Cobot:
     pose_seconds = 0
     job_seconds = 0
     pose = Pose(0, 0, 0, 0, 0, 0)
-    thread_running = False
-
-    a = 0
+    thread_running = False    
+    home_program = 99
 
     def __init__(self, config_path='config.yml') -> None:
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
         self.ip = config['cobot']['ip']
         self.port = int(config['cobot']['modbus_port'])
+        self.connect()
 
     def connect(self):
         try:
@@ -41,9 +41,9 @@ class Cobot:
     def disconnect(self):
         self.modbus_client.close()
 
-    def start_read_thread(self, counter):                
+    def start_read_thread(self):         
         self.thread_running = True
-        self.thread = Thread(target=self.read_interface_2, args=(counter,), daemon=True)
+        self.thread = Thread(target=self.read_interface_2, daemon=True)
         self.thread.start()
 
     def stop_thread(self):
@@ -54,22 +54,11 @@ class Cobot:
         self.__write_register(ModbusInterface.SELECTED_PROGRAM.value, program)
         trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
         if not trigger:
-            self.__write_register(ModbusInterface.START_TRIGGER.value, 1)
-            return
-        print('Trigger is SET on Cobot') # debug
+            self.__write_register(ModbusInterface.START_TRIGGER.value, 1)            
         
-
     def move_to_waiting(self):
         self.selected_program = 0
         self.set_program(self.selected_program)
-
-    def next_pose(self):
-        # write_register
-        pass
-
-    def previous_pose(self):
-        # write_register
-        pass
 
     def move(self, move_type, pose):        
         if move_type == 'joint':
@@ -93,16 +82,15 @@ class Cobot:
     def read_interface(self):
         self.status = CobotStatus(self.__read_register(ModbusInterface.COBOT_STATUS.value))
         self.position_status = PositionStatus(self.__read_register(ModbusInterface.POSITION_STATUS.value))
+        self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
         # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
-        # self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
 
-    def read_interface_2(self, c):
-        self.a = c
-        while self.thread_running:
+    def read_interface_2(self):        
+        while self.thread_running and self.modbus_client.is_socket_open:
             self.read_interface()
-            print(str(self.a))
-            self.a += 1
             sleep(1)
+        else:
+            print('Disconnected')
 
 
     def update_interface(self, state: AppState):
@@ -110,3 +98,12 @@ class Cobot:
         self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
         self.__write_register(ModbusInterface.PROGRAM_STATE.value, state.value)
         self.__write_register(ModbusInterface.POSITION_STATUS.value, state.value)
+
+        
+    def next_pose(self):
+        # write_register
+        pass
+
+    def previous_pose(self):
+        # write_register
+        pass

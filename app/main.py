@@ -6,28 +6,25 @@ from classes import Cobot, Camera, Controller
 from enumerables import PositionStatus, AppState, CobotStatus
 from logger import logger
 
-def main():            
 
-    controller = Controller()
+def main():
+
     camera = Camera()
-    camera.start()
-
     cobot = Cobot()
-    cobot.connect()
+    controller = Controller(cobot, camera)
 
     cobot.read_interface()
     cobot.update_interface(controller.state)
 
     # check if robot is on running State
-    while cobot.status != CobotStatus.RUNNING:        
+    while cobot.status != CobotStatus.RUNNING:
         logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
         sleep(5)
 
     # check if robot is in Home Position if not move there
     if not cobot.position_status == PositionStatus.HOME:
-        controller.state = AppState.MOVING
-        home_program = 99
-        cobot.set_program(home_program)
+        controller.set_state(AppState.MOVING)
+        cobot.set_program(cobot.home_program)
 
     while not cobot.position_status == PositionStatus.HOME:
         cobot.read_interface()
@@ -35,77 +32,75 @@ def main():
         logger.info('Waiting Cobot in Home position')
         sleep(5)
 
-    controller.state = AppState.WAITING_PARAMETER
+    controller.set_state(AppState.WAITING_PARAMETER)
 
-    while True: # Put another condition
+    while True:  # Put another condition
 
         # read and write modbus
-        cobot.read_interface()        
+        cobot.read_interface()
         cobot.update_interface(controller.state)
-        
+
         # read a break condition / keyboard
         if cobot.status != CobotStatus.RUNNING:
             logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
             sleep(1)
             continue
 
-        if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
-            # print('Emergency stop')
+        if cobot.emergency == CobotStatus.EMERGENCY_STOPPED:            
             logger.warning(f'Cobot is under Emergency Stop... Status: {cobot.status}')
             sleep(5)
-            continue                 
-        
+            continue
+
         # write information on camera window
 
         if controller.state == AppState.WAITING_INPUT:
-            # Change to manual            
-            controller.state = AppState.WAITING_PARAMETER
+            # Change to manual
+            controller.set_state(AppState.WAITING_PARAMETER)
 
-        # wait for a new product    
+        # wait for a new product
         elif controller.state == AppState.WAITING_PARAMETER:
             logger.info('Collecting parameters for POPID')
-            controller.load_parameters()                         
+            controller.load_parameters()
             if controller.parameters_found:
-                controller.state = AppState.PARAMETER_LOADED
+                controller.set_state(AppState.PARAMETER_LOADED)
             else:
-                controller.state = AppState.PARAMETER_NOT_FOUND
-            
+                controller.set_state(AppState.PARAMETER_NOT_FOUND)
+
         elif controller.state == AppState.PARAMETER_LOADED:
             controller.operation_result = 0
             controller.program_index = 0
             controller.pose_times = []
             controller.start_datetime = datetime.now()
             # move to identify CU model (optional)
-            # load keras model for the CU     
+            # load keras model for the CU
             # clear the pictures folder
-            controller.program = 0
             cobot.set_program(controller.program)  # move to waiting position
-            controller.state = AppState.MOVING_TO_WAITING
-            
+            controller.set_state(AppState.MOVING_TO_WAITING)
+
         elif controller.state == AppState.MOVING_TO_WAITING:
             if cobot.position_status == PositionStatus.WAITING:
                 if controller.program_index < controller.total_programs:
                     program = controller.program_list[controller.program_index]
-                    cobot.set_program(program)
-                    controller.state = AppState.MOVING_TO_POSE        
+                    controller.set_program(program)
+                    controller.set_state(AppState.MOVING_TO_POSE)
                 else:
-                    controller.state = AppState.PROCESSING_IMAGES
+                    controller.set_state(AppState.PROCESSING_IMAGES)
 
         elif controller.state == AppState.MOVING_TO_POSE:
             if cobot.position_status == PositionStatus.POSE:
-                controller.state = AppState.COLLECTING_IMAGES
-        
+                controller.set_state(AppState.COLLECTING_IMAGES)
+
         elif controller.state == AppState.COLLECTING_IMAGES:
             parameter = controller.parameter_list[controller.program_index]
             camera.read()
             camera.save_image(parameter)
-            cobot.move_to_waiting()            
+            cobot.move_to_waiting()
             controller.pose_times.append(datetime.now())
-            controller.state = AppState.MOVING_TO_WAITING
+            controller.set_state(AppState.MOVING_TO_WAITING)
 
         elif controller.state == AppState.PROCESSING_IMAGES:
             # Load all pictures inside a folder ... Load the model here?
-            pictures = []            
+            pictures = []
             results = []
 
             for file in os.listdir('captures'):
@@ -113,10 +108,10 @@ def main():
                     pictures.append(cv.imread(file))
 
             # Classify every picture and store into array
-            for pic in pictures:                
+            for pic in pictures:
                 result = 0
                 results.append(result)
-                
+
             # compare each picture prediction to 0000XXXX - CU, Position, Port, Variant
             # if all pictures are correct, send an OK report
             # write a footer on picture describing the results
@@ -124,18 +119,19 @@ def main():
             # save logger to database
             controller.operation_result = 1 if True else False
             controller.final_datetime = datetime.now()
-            total_time = (controller.start_datetime - controller.final_datetime).seconds
+            total_time = (controller.start_datetime -
+                          controller.final_datetime).seconds
             # print('Total operation time: %d', total_time)
             logger.info('Total operation time: %d', total_time)
-            controller.program_index += 1                    
-            controller.state = AppState.WAITING_INPUT                  
+            controller.program_index += 1
+            controller.set_state(AppState.WAITING_INPUT)
 
-    logger.info('Finishing Program') # In case of breaking
-        
+    logger.info('Finishing Program')  # In case of breaking
+
 
 if __name__ == '__main__':
     try:
-        main()        
+        main()
     except Exception as e:
         logger.info('Finishing program due error')
         logger.error(e)
