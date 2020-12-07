@@ -4,6 +4,7 @@
 ID*
 UR_*
 images
+images/*
 
 app/__pycache__
 app/.vscode
