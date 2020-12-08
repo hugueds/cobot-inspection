@@ -8,26 +8,24 @@ from enumerables import PositionStatus, AppState, CobotStatus
 
 def main():
 
-    camera = Camera()
-    cobot = Cobot()
-    controller = Controller(cobot, camera)
+    controller = Controller()
 
-    # cobot.read_interface()
-    # cobot.update_interface(controller.state)
+    # controller.cobot.read_interface()
+    # controller.cobot.update_interface(controller.state)
 
     controller.set_state(AppState.INITIAL)
 
     # check if robot is on running State
-    while cobot.status != CobotStatus.RUNNING:
-        logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
+    while controller.cobot.status != CobotStatus.RUNNING:
+        logger.warning(f'Cobot is not ready for work... Status: {controller.cobot.status}')
         sleep(5)
 
     # check if robot is in Home Position if not move there
-    if not cobot.position_status == PositionStatus.HOME:
+    if not controller.cobot.position_status == PositionStatus.HOME:
         controller.set_state(AppState.MOVING)
         controller.set_program(controller.home_program)
 
-    while not cobot.position_status == PositionStatus.HOME:
+    while not controller.cobot.position_status == PositionStatus.HOME:
         print('Waiting Cobot reach the Home position')
         logger.info('Waiting Cobot reach in Home position')
         sleep(5)
@@ -42,12 +40,12 @@ def main():
 
         # read a break condition / keyboard
         if controller.cobot.status != CobotStatus.RUNNING:
-            logger.warning(f'Cobot is not ready for work... Status: {cobot.status}')
+            logger.warning(f'Cobot is not ready for work... Status: {controller.cobot.status}')
             sleep(1)
             continue
 
         if controller.cobot.emergency == CobotStatus.EMERGENCY_STOPPED:            
-            logger.warning(f'Cobot is under Emergency Stop... Status: {cobot.status}')
+            logger.warning(f'Cobot is under Emergency Stop... Status: {controller.cobot.status}')
             sleep(5)
             continue
 
@@ -59,7 +57,8 @@ def main():
         if controller.state == AppState.WAITING_INPUT and not controller.manual_mode:
             # Change to manual
             print('Waiting a new Input...')
-            start = 0
+            start = 1
+            sleep(5)
             if start:
                 start = False
                 controller.new_product()
@@ -74,8 +73,7 @@ def main():
             else:
                 controller.set_state(AppState.PARAMETER_NOT_FOUND)
 
-        elif controller.state == AppState.PARAMETER_LOADED:
-            # move to identify CU model (optional)
+        elif controller.state == AppState.PARAMETER_LOADED:            
             controller.clear_folder()
             controller.set_program(controller.waiting_program)  # move to waiting position
             controller.set_state(AppState.MOVING_TO_WAITING)
@@ -96,10 +94,15 @@ def main():
 
         elif controller.state == AppState.COLLECTING_IMAGES:  
             print('Collecting Image')
-            controller.save_image()
-            controller.set_program(controller.waiting_program)
-            controller.pose_times.append(datetime.now())
-            controller.set_state(AppState.MOVING_TO_WAITING)
+            controller.save_image()                        
+            controller.trigger_after_pose()
+            controller.set_state(AppState.MOVING_TO_AFTER_POSE)
+
+        elif controller.state == AppState.MOVING_TO_AFTER_POSE:
+            print('Moving to after pose...')
+            if controller.cobot.position_status == PositionStatus.AFTER_POSE:
+                controller.pose_times.append(datetime.now())
+                controller.set_program(controller.waiting_program)
 
         elif controller.state == AppState.PROCESSING_IMAGES:
             # TODO: write a footer on picture describing the results            
@@ -112,6 +115,8 @@ def main():
             print('Total operation time: %d', total_time)
             logger.info('Total operation time: %d', total_time)            
             controller.set_state(AppState.WAITING_INPUT)
+
+        sleep(0.5)
 
     logger.info('Finishing Program')  # In case of breaking
 

@@ -17,6 +17,7 @@ class Camera:
             config = yaml.safe_load(file)
         self.image_folder = config['camera']['folder']
         self.results_folder = config['camera']['results_folder']
+        self.src = int(config['camera']['src'])
         self.stream = WebcamVideoStream(self.src, 'WebCam').start()
 
     def config_camera(self, config='config.yml'):

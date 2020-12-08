@@ -20,8 +20,10 @@ class Cobot:
     pose_seconds = 0
     job_seconds = 0
     pose = Pose(0, 0, 0, 0, 0, 0)
-    thread_running = False    
+    thread_running = True    
     home_program = 99
+
+    trigger = False
 
     def __init__(self, config_path='config.yml') -> None:
         with open(config_path, 'r') as file:
@@ -50,20 +52,17 @@ class Cobot:
     def set_program(self, program):
         self.selected_program = program
         self.__write_register(ModbusInterface.SELECTED_PROGRAM.value, program)
-        trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
-        if not trigger:
-            self.__write_register(ModbusInterface.START_TRIGGER.value, 1)            
+        self.set_trigger()
+
+    def set_trigger(self, value=1):
+        self.trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
+        if not self.trigger:
+            self.__write_register(ModbusInterface.START_TRIGGER.value, value)    
         
     def move_to_waiting(self):
         self.selected_program = 0
         self.set_program(self.selected_program)
-
-    def move(self, move_type, pose):        
-        if move_type == 'joint':
-            pass
-        elif move_type == 'linear':
-            pass    
-
+    
     def __read_register(self, address):
         try:
             reg = self.modbus_client.read_holding_registers(address, count=1)
@@ -75,6 +74,8 @@ class Cobot:
         try:
             self.modbus_client.write_register(address, value)
         except Exception as e:
+            print(address)
+            print(value)
             print('Cobot::__write_register::', str(e))
 
     def read_interface(self):
@@ -95,8 +96,7 @@ class Cobot:
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
         self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
         self.__write_register(ModbusInterface.PROGRAM_STATE.value, state.value)
-        self.__write_register(ModbusInterface.POSITION_STATUS.value, state.value)
-
+        # self.__write_register(ModbusInterface.POSITION_STATUS.value, state.value)
         
     def next_pose(self):
         # write_register

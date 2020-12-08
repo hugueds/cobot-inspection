@@ -30,17 +30,18 @@ class Controller:
     model_name = '0000'
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
-        self.cobot = cobot
-        self.camera = camera
-        self.camera.start()
-
         if not debug:
-            from classes.TFModel import TFModel
-        # self.cobot.connect()
-        # self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
+            from classes.TFModel import TFModel        
+
+        self.cobot = cobot if cobot else Cobot()
+        self.camera = camera if camera else Camera()        
+
+        self.cobot.connect()            
+        self.camera.start()        
+        self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
+        self.thread_cobot.start()
         # self.cobot.start_read_thread()
         # self.thread_camera = Thread(target=self.update_camera_interface, daemon=True)
-        # self.thread_cobot.start()
         # self.thread_camera.start()
 
 
@@ -48,13 +49,18 @@ class Controller:
         self.start_datetime = datetime.now()
         self.operation_result = 0
         self.program_index = 0
+        self.parameter_list = []
+        self.program_list = []
         self.pose_times = []
         self.popid = '999999'        
+        self.parameters_found = False
+        self.total_programs = 0
 
     def load_parameters(self): # Fazer download do SQL
         self.parameter_list = self.get_parameter_list()
         self.program_list = [int(x[5:7]) for x in self.parameter_list] # carrega a lista de LTs e separa a lista de parametros
         self.total_programs = len(self.program_list)
+        self.parameters_found = True
 
     def get_parameter_list(self): # Simulate parameters
         return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
@@ -68,9 +74,12 @@ class Controller:
         pass
 
     def next_pose(self):
-        self.program_index += 1
         program = self.program_list[self.program_index]
         self.set_program(program)
+        self.program_index += 1
+
+    def trigger_after_pose(self):
+        self.cobot.set_trigger(2)
 
     def set_program(self, program):
         self.program = program
@@ -81,12 +90,12 @@ class Controller:
 
     def update_cobot_interface(self):
         print('Starting Cobot Update Interface')
-        while self.cobot.thread_running and self.cobot.modbus_client.is_socket_open:
+        while self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
             self.cobot.update_interface(self.state)
             sleep(0.25)
         else:
-            print('Update has ended')
+            print('Update Cobot Interface has stopped')
 
     def update_camera_interface(self):
         print('Starting Camera Update Interface')
