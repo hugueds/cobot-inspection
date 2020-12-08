@@ -1,3 +1,6 @@
+import os
+import shutil
+from pathlib import Path
 from threading import Thread
 from datetime import datetime
 from time import sleep
@@ -20,6 +23,9 @@ class Controller:
     component_unit = ''
     parameters_found = False
     manual_mode = False
+    waiting_program = 0
+    home_program = 99
+    popid = '999999'
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot
@@ -31,11 +37,17 @@ class Controller:
         # self.thread_camera.start()
 
 
-    def load_parameters(self):        
+    def new_product(self):
+        self.start_datetime = datetime.now()
+        self.operation_result = 0
+        self.program_index = 0
+        self.pose_times = []
+        pass
+
+    def load_parameters(self): # Fazer download do SQL
         self.parameter_list = self.get_parameter_list()
         self.program_list = [int(x[5:7]) for x in self.parameter_list] # carrega a lista de LTs e separa a lista de parametros
-        self.total_programs = len(self.program_list) 
-        self.program_index = 0
+        self.total_programs = len(self.program_list)
 
     def get_parameter_list(self): # Simulate parameters
         return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
@@ -64,8 +76,24 @@ class Controller:
         else:
             print('Update has ended')
         
-
     def start_camera(self):
         self.camera.display = True
         self.camera.start()
+
+    def clear_folder(self):
+        folder = self.camera.image_folder
+        files = os.listdir(folder)
+        for f in files:
+            os.remove(f'{folder}/{f}')
+
+
+    def load_files(self):
+        pass
+
+    def predict(self):
+        pass
+        
+    def save_image(self):
+        parameter = self.parameter_list[self.program_index]            
+        self.camera.save_image(parameter)        
         

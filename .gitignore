@@ -7,13 +7,17 @@ UR_*
 UR_*/*
 images
 images/*
+temp
+temp/*
 
 app/__pycache__
 app/.vscode
 app/captures
 app/logs
 app/results
-
+app/temp
+app/temp/*
+app/keras_models/*
 
 
 

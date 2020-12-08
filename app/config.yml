@@ -8,7 +8,7 @@ camera:
   src: 0
   resolution: '1080x720'
   fps: 10
-  save_path: 'captures'
+  folder: 'temp'
   config:
     brightness: 0
     contrast: 0
@@ -19,10 +19,9 @@ cobot:
   tcp_port: 
   modbus_port: 502
 models:
-  path: 'graph_files'  
+  path: 'keras_models'  
   size: 224
   channels: 3
-
 database:
   name: 'cobot.db'
 log:

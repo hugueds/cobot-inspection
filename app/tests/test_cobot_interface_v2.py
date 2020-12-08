@@ -73,15 +73,14 @@ def run():
             controller.set_state(AppState.PARAMETER_LOADED)
             
         elif controller.state == AppState.PARAMETER_LOADED:
-            print('Parameters loaded, moving to wait position')
-            controller.program = 0
-            controller.set_program(controller.program)  # move to waiting position
+            print('Parameters loaded, moving to wait position')            
+            controller.set_program(controller.waiting_program)
             controller.set_state(AppState.MOVING_TO_WAITING)
             
         elif controller.state == AppState.MOVING_TO_WAITING:
             print('Moving to waiting position...')
             print('Position Status:', cobot.position_status)
-            if cobot.position_status == PositionStatus.WAITING:
+            if controller.cobot.position_status == PositionStatus.WAITING:
                 if controller.program_index < controller.total_programs:
                     controller.program = controller.program_list[controller.program_index]
                     controller.set_program(controller.program)

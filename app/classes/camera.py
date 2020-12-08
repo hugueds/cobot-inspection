@@ -1,10 +1,8 @@
+import yaml
 from threading import Thread
 from datetime import datetime
 import cv2 as cv
 from imutils.video.webcamvideostream import WebcamVideoStream
-
-image_folder = 'captures'
-
 class Camera:
 
     src = 0
@@ -14,7 +12,10 @@ class Camera:
     stopped = False
     frame_counter = 0
 
-    def __init__(self, config=None):
+    def __init__(self, config_path='config.yml'):        
+        with open(config_path, 'r') as file:
+            config = yaml.safe_load(file)
+        self.image_folder = config['camera']['folder']
         self.stream = WebcamVideoStream(self.src, 'WebCam').start()
 
     def config_camera(self, config='config.yml'):
@@ -57,8 +58,8 @@ class Camera:
 
     def save_image(self, parameter=''):
         dt = datetime.now()
-        file_name = dt.strftime("%Y-%m-%d_%h-%M-%s_" + parameter)
-        path = image_folder + '/' + file_name
+        file_name = dt.strftime(f"%Y%m%d_%h%M%s_{parameter}")
+        path = f'{self.image_folder}/{file_name}'
         cv.imwrite(path, self.frame)
 
     def display(self):

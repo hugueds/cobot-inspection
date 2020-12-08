@@ -2,9 +2,8 @@ import cv2 as cv
 import numpy as np
 import yaml
 import os
-import concurrent.futures
-import logging
 from tensorflow.keras.models import load_model
+from logger import logger
     
 models = {}
 
@@ -18,7 +17,7 @@ class TFModel:
             self.path = config['models']['path']                        
             
         except Exception as e:            
-            logging.error('TFModel::__init__::Invalid Model Configuration::'+str(e))
+            logger.error('TFModel::__init__::Invalid Model Configuration::'+str(e))
     
     def predict(self, image):        
         global models
@@ -28,8 +27,7 @@ class TFModel:
         image = image.reshape(1, 224, 224, 3)
 
         self.load_single_model()
-
-        logging.info('Classification Process Started for model ' + self.name)     
+        logger.info(f'Classification Process Started for model {self.name}')
         prediction = { 'label':  '', 'confidence': 0.0 }
         net = models[self.name]['graph']
         res = net.predict(image)        
