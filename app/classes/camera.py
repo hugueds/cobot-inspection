@@ -56,9 +56,9 @@ class Camera:
     def draw_on_image(self):
         pass
 
-    def save_image(self, parameter=''):
+    def save_image(self, filename=''):
         dt = datetime.now()
-        file_name = dt.strftime(f"%Y%m%d_%h%M%s_{parameter}")
+        file_name = dt.strftime(f"%Y%m%d_%h%M%s_{filename}")
         path = f'{self.image_folder}/{file_name}'
         cv.imwrite(path, self.frame)
 

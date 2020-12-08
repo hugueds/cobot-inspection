@@ -94,6 +94,7 @@ class Controller:
         pass
         
     def save_image(self):
-        parameter = self.parameter_list[self.program_index]            
-        self.camera.save_image(parameter)        
+        parameter = self.parameter_list[self.program_index]
+        filename = f'{self.program_index}_{parameter}'
+        self.camera.save_image(filename)
         
