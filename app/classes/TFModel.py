@@ -40,8 +40,7 @@ class TFModel:
     def load_single_model(self):
         global models
 
-        filename = 'keras_model.h5'        
-        print('Loading Model ' + self.name)
+        filename = 'keras_model.h5'
 
         if self.name in models:
             return print('Model Loaded from Cache')            

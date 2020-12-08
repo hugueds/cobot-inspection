@@ -1,12 +1,9 @@
-from models.result import Result
-from classes.TFModel import TFModel
-import os
 from datetime import datetime
 from time import sleep
-import cv2 as cv
-from classes import Cobot, Camera, Controller
-from enumerables import PositionStatus, AppState, CobotStatus
 from logger import logger
+from classes import Cobot, Camera, Controller
+from models.result import Result
+from enumerables import PositionStatus, AppState, CobotStatus
 
 
 def main():
@@ -86,9 +83,8 @@ def main():
         elif controller.state == AppState.MOVING_TO_WAITING:
             print('Moving to Waiting...')
             if controller.cobot.position_status == PositionStatus.WAITING:
-                if controller.program_index < controller.total_programs:
-                    program = controller.program_list[controller.program_index]
-                    controller.set_program(program)
+                if controller.program_index < controller.total_programs:                    
+                    controller.next_pose()
                     controller.set_state(AppState.MOVING_TO_POSE)
                 else:
                     controller.set_state(AppState.PROCESSING_IMAGES)
@@ -106,32 +102,15 @@ def main():
             controller.set_state(AppState.MOVING_TO_WAITING)
 
         elif controller.state == AppState.PROCESSING_IMAGES:
-            # Load all pictures inside a folder ... Load the model here?
-            model_name = '0000'
-            model = TFModel(model_name)  
-            pictures = []
-            results = []
-
-            for file in os.listdir('temp'):
-                if file.split('.')[-1] in ['jpg', 'png']:
-                    print(f'Processing image {file}')
-                    image = cv.imread(file)
-                    prediction = model.predict(image)
-                    # compare each picture prediction to 0000XXXX - CU, Position, Port, Variant
-                    # if all pictures are correct, send an OK report                    
-                    result = Result()
-                    results.append()            
-
-            # write a footer on picture describing the results
-            # save all picures to a folder containing POPID and CU
-            # save logger to database
+            # TODO: write a footer on picture describing the results            
+            # TODO: save logger to database
+            controller.process_images()
             controller.operation_result = 1 if True else False
             controller.final_datetime = datetime.now()
             total_time = (controller.start_datetime -
                           controller.final_datetime).seconds
-            # print('Total operation time: %d', total_time)
-            logger.info('Total operation time: %d', total_time)
-            controller.program_index += 1
+            print('Total operation time: %d', total_time)
+            logger.info('Total operation time: %d', total_time)            
             controller.set_state(AppState.WAITING_INPUT)
 
     logger.info('Finishing Program')  # In case of breaking

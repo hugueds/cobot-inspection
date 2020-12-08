@@ -5,11 +5,16 @@ from time import sleep
 def run():
 
     cam = Camera()
-    ctrl = Controller(camera=cam)
-    ctrl.start_camera()
-    while True:
-        msg = 'Collecting images'
-                
-        print(msg)
-        sleep(1)
+    c = Controller(camera=cam)
+    c.start_camera()
+    c.load_parameters()
+
+    c.process_images()
+
+    # sleep(1)
+
+    # for i in range(3):
+    #     c.save_image()
+    #     sleep(1)
+    
 

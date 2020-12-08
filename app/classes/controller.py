@@ -1,5 +1,5 @@
 import os
-import shutil
+import cv2 as cv
 from pathlib import Path
 from threading import Thread
 from datetime import datetime
@@ -8,6 +8,7 @@ from enumerables import AppState
 from classes.cobot import Cobot
 from classes.camera import Camera
 
+debug = True
 class Controller:
 
     state = AppState.INITIAL      
@@ -20,19 +21,25 @@ class Controller:
     start_datetime = datetime.now()
     final_datetime = start_datetime
     pose_times = []
-    component_unit = ''
+    component_unit = '0000'
     parameters_found = False
     manual_mode = False
     waiting_program = 0
     home_program = 99
     popid = '999999'
+    model_name = '0000'
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot
-        self.camera = camera        
-        self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
+        self.camera = camera
+        self.camera.start()
+
+        if not debug:
+            from classes.TFModel import TFModel
+        # self.cobot.connect()
+        # self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
         # self.cobot.start_read_thread()
-        # self.thread_camera = Thread(target=self.update_cobot_interface, daemon=True)
+        # self.thread_camera = Thread(target=self.update_camera_interface, daemon=True)
         # self.thread_cobot.start()
         # self.thread_camera.start()
 
@@ -42,7 +49,7 @@ class Controller:
         self.operation_result = 0
         self.program_index = 0
         self.pose_times = []
-        pass
+        self.popid = '999999'        
 
     def load_parameters(self): # Fazer download do SQL
         self.parameter_list = self.get_parameter_list()
@@ -60,8 +67,13 @@ class Controller:
     def load_images(self):
         pass
 
+    def next_pose(self):
+        self.program_index += 1
+        program = self.program_list[self.program_index]
+        self.set_program(program)
+
     def set_program(self, program):
-        self.program = 0
+        self.program = program
         self.cobot.set_program(program)
 
     def set_state(self, state: AppState):
@@ -75,6 +87,13 @@ class Controller:
             sleep(0.25)
         else:
             print('Update has ended')
+
+    def update_camera_interface(self):
+        print('Starting Camera Update Interface')
+        while True:
+            print('Camera Thread')
+            sleep(1)
+            pass
         
     def start_camera(self):
         self.camera.display = True
@@ -86,12 +105,19 @@ class Controller:
         for f in files:
             os.remove(f'{folder}/{f}')
 
-
-    def load_files(self):
-        pass
-
-    def predict(self):
-        pass
+    def process_images(self):
+        model = TFModel(self.model_name)
+        folder = self.camera.image_folder
+        for image_file in os.listdir(folder):
+            if image_file.split('.')[-1] in ['png', 'jpg']:                
+                image = cv.imread(f'{folder}/{image_file}')
+                prediction = model.predict(image)
+                edited_image = self.camera.write_results(image, prediction)                
+                path = f'results/{self.popid}/{self.component_unit}/'
+                Path(path).mkdir(parents=True, exist_ok=True)                
+                path = f'{path}/{image_file}'
+                cv.imwrite(path, edited_image)
+                
         
     def save_image(self):
         parameter = self.parameter_list[self.program_index]

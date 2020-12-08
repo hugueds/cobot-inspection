@@ -9,6 +9,7 @@ camera:
   resolution: '1080x720'
   fps: 10
   folder: 'temp'
+  results_folder: 'results'
   config:
     brightness: 0
     contrast: 0

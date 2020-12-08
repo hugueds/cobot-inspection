@@ -16,6 +16,7 @@ class Camera:
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
         self.image_folder = config['camera']['folder']
+        self.results_folder = config['camera']['results_folder']
         self.stream = WebcamVideoStream(self.src, 'WebCam').start()
 
     def config_camera(self, config='config.yml'):
@@ -26,24 +27,16 @@ class Camera:
         self.thread.start()
 
     def update(self):
-
         self.frame = self.stream.read()
-        self.frame_counter = 0
-
-        print(self.frame.shape)
+        self.frame_counter = 0        
 
         while not self.stopped:
-
             self.frame_counter += 1
             self.frame = self.stream.read()
-
             cv.imshow('main', self.frame)
-
             key = cv.waitKey(1) & 0xFF
-
             if key == ord('q'):
                 self.stopped = True
-
         cv.destroyAllWindows()
 
     def pause(self):
@@ -58,9 +51,19 @@ class Camera:
 
     def save_image(self, filename=''):
         dt = datetime.now()
-        file_name = dt.strftime(f"%Y%m%d_%h%M%s_{filename}")
-        path = f'{self.image_folder}/{file_name}'
-        cv.imwrite(path, self.frame)
+        date_str = dt.strftime('%Y%m%d_%H%M%S')
+        filename =  f'{date_str}_{filename}'
+        path = f'{self.image_folder}/{filename}.jpg'
+        print('Saving File: ', filename)
+        cv.imwrite(path, self.frame)   
+
+    def write_results(self, image, prediction):
+        edited_image = image.copy()
+        return edited_image                
+        
+    def save_result(self, image, save_path, file):
+        path = f'results/{save_path}/{file}'
+        cv.imwrite(path, image)
 
     def display(self):
         self.openned = not self.openned

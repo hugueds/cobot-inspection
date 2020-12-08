@@ -1,10 +1,9 @@
-from enum import Enum
-from threading import Thread
 import yaml
-from models import Pose
-from pymodbus.client.sync import ModbusTcpClient
-from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
+from threading import Thread
 from time import sleep
+from pymodbus.client.sync import ModbusTcpClient
+from models import Pose
+from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
 
 class Cobot:
 
@@ -29,7 +28,6 @@ class Cobot:
             config = yaml.safe_load(file)
         self.ip = config['cobot']['ip']
         self.port = int(config['cobot']['modbus_port'])
-        self.connect()
 
     def connect(self):
         try:
