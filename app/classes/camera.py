@@ -21,7 +21,10 @@ class Camera:
         self.stream = WebcamVideoStream(self.src, 'WebCam').start()
 
     def config_camera(self, config='config.yml'):
-        pass
+        brightness = 0
+        sharpness = 0
+        hue = 0
+        contrast = 0        
 
     def start(self):
         self.thread = Thread(target=self.update, args=(), daemon=True)
@@ -34,10 +37,14 @@ class Camera:
         while not self.stopped:
             self.frame_counter += 1
             self.frame = self.stream.read()
-            cv.imshow('main', self.frame)
+
+            if self.frame:
+                cv.imshow('main', self.frame)
+
             key = cv.waitKey(1) & 0xFF
             if key == ord('q'):
                 self.stopped = True
+
         cv.destroyAllWindows()
 
     def pause(self):

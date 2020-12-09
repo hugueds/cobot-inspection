@@ -4,6 +4,7 @@ from time import sleep
 from pymodbus.client.sync import ModbusTcpClient
 from models import Pose
 from enumerables import ModbusInterface, PositionStatus, AppState, CobotStatus
+from logger import logger
 
 class Cobot:
 
@@ -39,15 +40,7 @@ class Cobot:
             return print('Cobot::connect::', str(e))
 
     def disconnect(self):
-        self.modbus_client.close()
-
-    def start_read_thread(self):         
-        self.thread_running = True
-        self.thread = Thread(target=self.read_interface_2, daemon=True)
-        self.thread.start()
-
-    def stop_thread(self):
-        self.thread_running = False
+        self.modbus_client.close()    
 
     def set_program(self, program):
         self.selected_program = program
@@ -73,23 +66,14 @@ class Cobot:
     def __write_register(self, address, value):
         try:
             self.modbus_client.write_register(address, value)
-        except Exception as e:
-            print(address)
-            print(value)
-            print('Cobot::__write_register::', str(e))
+        except Exception as e:            
+            return print('Cobot::__write_register::', str(e))
 
     def read_interface(self):
         self.status = CobotStatus(self.__read_register(ModbusInterface.COBOT_STATUS.value))
         self.position_status = PositionStatus(self.__read_register(ModbusInterface.POSITION_STATUS.value))
         self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
         # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
-
-    def read_interface_2(self):        
-        while self.thread_running and self.modbus_client.is_socket_open:
-            self.read_interface()
-            sleep(1)
-        else:
-            print('Disconnected')
 
 
     def update_interface(self, state: AppState):
@@ -105,3 +89,18 @@ class Cobot:
     def previous_pose(self):
         # write_register
         pass
+
+    def start_read_thread(self):         
+        self.thread_running = True
+        self.thread = Thread(target=self.read_interface_2, daemon=True)
+        self.thread.start()
+
+    def stop_thread(self):
+        self.thread_running = False
+
+    def read_interface_2(self):        
+        while self.thread_running and self.modbus_client.is_socket_open:
+            self.read_interface()
+            sleep(1)
+        else:
+            print('Disconnected')
