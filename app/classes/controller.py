@@ -7,8 +7,9 @@ from time import sleep
 from enumerables import AppState
 from classes.cobot import Cobot
 from classes.camera import Camera
+from models import CameraInfo
 
-debug = True
+debug = False
 
 if not debug:
     from classes.TFModel import TFModel
@@ -26,6 +27,7 @@ class Controller:
     program = 0
     program_index = 0
     start_datetime = datetime.now()
+    job_datetime = datetime.now()
     final_datetime = start_datetime
     pose_times = []
     component_unit = '0000'
@@ -53,7 +55,7 @@ class Controller:
         self.thread_camera.start()
 
     def new_product(self):
-        self.start_datetime = datetime.now()
+        self.job_datetime = datetime.now()
         self.operation_result = 0
         self.program_index = 0
         self.parameter_list = []
@@ -62,7 +64,6 @@ class Controller:
         self.popid = '999999'        
         self.parameters_found = False
         self.total_programs = 0
-        
 
     def load_parameters(self): # Fazer download do SQL
         self.parameter_list = self.get_parameter_list()
@@ -70,19 +71,14 @@ class Controller:
         self.total_programs = len(self.program_list)
         self.parameters_found = True
         self.parameter = self.parameter_list[0]    
-    
-    # def modbus_update(self):
-    #     while self.modbus_thread:
-    #         self.cobot.update_interface()            
-    #         sleep(1)
 
     def load_images(self):
         pass
 
     def next_pose(self):
-        program = self.program_list[self.program_index]
+        self.program = self.program_list[self.program_index]
         self.parameter = self.parameter_list[self.program_index]
-        self.set_program(program)
+        self.set_program(self.program)
         self.program_index += 1
 
     def trigger_after_pose(self):
@@ -110,22 +106,20 @@ class Controller:
 
     def update_camera_interface(self):
         print('Starting Camera Update Interface')
-        
-        while True:            
-            info = {
-                'state': self.state.name,
-                'cu': self.component_unit,
-                'popid': self.popid,
-                'parameter': self.parameter  ,
-                'program-index': '',
-                'total-programs': '',
-                'life-beat-cobot': '',
-                'manual': '',
-                'jobtime': str((datetime.now() - self.start_datetime).seconds),
-                'uptime': str((datetime.now() - self.start_datetime).seconds),
-                'message': ''
-                # 'parameter': self.parameter_list[self.program_index]                
-            }
+        info = CameraInfo()
+        while True:
+            info.state = self.state.name
+            info.cu =  self.component_unit
+            info.popid = self.popid
+            info.parameter = self.parameter
+            info.program = str(self.program)
+            info.program_index = str(self.program_index)
+            info.total_programs = str(self.total_programs)
+            info.life_beat_cobot = str(self.cobot.life_beat)
+            info.manual = str(self.manual_mode)
+            info.jobtime = str((datetime.now() - self.job_datetime).seconds)
+            info.uptime = str((datetime.now() - self.start_datetime).seconds)
+            info.message = '[INFO] Message Test'            
             self.camera.display_info(info)        
 
     def clear_folder(self):

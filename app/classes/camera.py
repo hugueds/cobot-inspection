@@ -1,3 +1,4 @@
+from models.camera_info import CameraInfo
 import yaml
 from threading import Thread
 from datetime import datetime
@@ -23,7 +24,7 @@ class Camera:
         self.image_folder = config['camera']['folder']
         self.results_folder = config['camera']['results_folder']
         self.src = int(config['camera']['src'])
-        # self.stream = WebcamVideoStream(self.src, 'WebCam').start()
+        self.stream = WebcamVideoStream(self.src, 'WebCam').start()
 
     def config_camera(self, config='config.yml'):
         self.brightness = 0
@@ -36,12 +37,12 @@ class Camera:
         self.thread.start()
 
     def update(self):
-        # self.frame = self.stream.read()
+        self.frame = self.stream.read()
         self.frame_counter = 0        
 
         while not self.stopped:
             self.frame_counter += 1
-            # self.frame = self.stream.read()    
+            self.frame = self.stream.read()
             cv.imshow('main', self.frame)
             key = cv.waitKey(1) & 0xFF
             if key == ord('q'):
@@ -75,7 +76,7 @@ class Camera:
         font = cv.FONT_HERSHEY_SIMPLEX
         color = (0,200,200)
         text = f"LABEL: {prediction.label}, ACCURACY: {round( (prediction.confidence * 100), 2)}%"
-        cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.75, color, 2)
+        cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.70, color, 2)
         return edited_image
         
     def save_result(self, image: np.ndarray, save_path, file):
@@ -85,23 +86,23 @@ class Camera:
     def display(self):
         self.openned = not self.openned
 
-    def display_info(self, info):
+    def display_info(self, info: CameraInfo):
 
         info_frame = np.zeros((480, 640), dtype=np.uint8)
         font = cv.FONT_HERSHEY_SIMPLEX
         p = 20
         o = 25
-        cv.putText(info_frame, 'STATE: ' + info['state'], (10, p+0*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'CU: ', (10, p+1*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'PARAMETER: ', (10, p+2*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'POSICAO: ', (10, p+3*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'PROGRAMA: : ', (10, p+4*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'MANUAL: ', (10, p+5*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'LIFE BEAT: ', (10, p+6*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'COBOT STATUS: ', (10, p+7*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'MODBUS STATUS: ', (10, p+8*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'JOB TIME: ', (10, p+9*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'UPTIME TIME: ' + info['uptime'], (10, p+10*o), font, 0.7, 255, 2)
+        i = 0
+        cv.putText(info_frame, 'POPID: ' + info.popid, (10, p+0*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'STATE: ' + info.state, (10, p+1*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'CU: ' + info.cu, (10, p+2*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (10, p+3*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'PROGRAM: ' + info.program, (10, p+4*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (10, p+5*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'MANUAL: ' + info.manual, (10, p+6*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (10, p+7*o), font, 0.7, 255, 2)        
+        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (10, p+8*o), font, 0.7, 255, 2)
+        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (10, p+9*o), font, 0.7, 255, 2)
         cv.imshow('info', info_frame)
         cv.waitKey(1) & 0xFF
 

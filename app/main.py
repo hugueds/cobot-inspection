@@ -64,6 +64,7 @@ while True:  # Put another condition
     elif controller.state == AppState.PARAMETER_LOADED:
         controller.clear_folder()
         controller.set_waiting_program()
+        sleep(1)
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_WAITING:
@@ -105,7 +106,7 @@ while True:  # Put another condition
         logger.info(f"Total operation time: {total_time}")
         controller.set_state(AppState.WAITING_INPUT)
 
-    sleep(0.5)
+    sleep(0.25)
 
 logger.info("Finishing Program")  # In case of breaking
 
