@@ -10,6 +10,7 @@ camera:
   fps: 10
   folder: 'temp'
   results_folder: 'results'
+  debug: True
   config:
     brightness: 0
     contrast: 0

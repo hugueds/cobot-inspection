@@ -3,6 +3,7 @@ import numpy as np
 import yaml
 import os
 from tensorflow.keras.models import load_model
+from models import Prediction
 from logger import logger
     
 models = {}
@@ -14,27 +15,28 @@ class TFModel:
             with open('config.yml', 'r') as f:
                 config = yaml.safe_load(f)                
             self.name = name
-            self.path = config['models']['path']                        
+            self.path = config['models']['path']
+            print('Loading Model ', name)
             
         except Exception as e:            
             logger.error('TFModel::__init__::Invalid Model Configuration::'+str(e))
     
-    def predict(self, image):        
+    def predict(self, image) -> Prediction:
         global models
 
         image = cv.resize(image, (224,224), cv.INTER_AREA)
         image = (image / 127.0) - 1        
         image = image.reshape(1, 224, 224, 3)
 
-        self.load_single_model()
-        logger.info(f'Classification Process Started for model {self.name}')
+        self.load_single_model()        
+        
         prediction = { 'label':  '', 'confidence': 0.0 }
         net = models[self.name]['graph']
         res = net.predict(image)        
         index = int(res.argmax(axis=1)[0])        
-        prediction['label'] = models[self.name]['labels'][index].upper()
-        prediction['confidence'] = float(round(res[0][index], 2))
-        return prediction        
+        label = models[self.name]['labels'][index].upper()
+        confidence = float(round(res[0][index], 2))        
+        return Prediction(label, confidence)
 
 
     def load_single_model(self):
@@ -77,4 +79,3 @@ class TFModel:
                             'labels': labels
                         }
 
-    

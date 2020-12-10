@@ -24,7 +24,7 @@ class Cobot:
     thread_running = True    
     home_program = 99
 
-    trigger = False
+    trigger = 0
 
     def __init__(self, config_path='config.yml') -> None:
         with open(config_path, 'r') as file:
@@ -42,7 +42,7 @@ class Cobot:
     def disconnect(self):
         self.modbus_client.close()    
 
-    def set_program(self, program):
+    def set_program(self, program: int):
         self.selected_program = program
         self.__write_register(ModbusInterface.SELECTED_PROGRAM.value, program)
         self.set_trigger()
@@ -56,14 +56,14 @@ class Cobot:
         self.selected_program = 0
         self.set_program(self.selected_program)
     
-    def __read_register(self, address):
+    def __read_register(self, address: int):
         try:
             reg = self.modbus_client.read_holding_registers(address, count=1)
             return reg.registers[0]
         except Exception as e:
             return print('Cobot::__read_register::', str(e))
 
-    def __write_register(self, address, value):
+    def __write_register(self, address: int, value: int):
         try:
             self.modbus_client.write_register(address, value)
         except Exception as e:            

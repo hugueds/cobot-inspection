@@ -1,4 +1,15 @@
+from enumerables.app_state import AppState
 from tests import camera_test
+from time import sleep
+from classes import Controller, Camera
 
-if __name__ == '__main__':
-    camera_test.run()
+c = Controller()
+
+# c.start_camera()
+
+s = 0
+
+while True:
+    print('Main Thread')
+    sleep(5)
+
