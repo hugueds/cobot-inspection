@@ -7,10 +7,10 @@ from time import sleep
 from enumerables import AppState
 from classes.cobot import Cobot
 from classes.camera import Camera
-from models import CameraInfo
+from models import CameraInfo, prediction
 import keyboard
 
-debug = True
+debug = False
 
 if not debug:
     from classes.TFModel import TFModel
@@ -38,6 +38,10 @@ class Controller:
     model_name = '0000'
     parameter = ''
     flag_new_product = False
+    predictions = []
+
+    capture_list = ['0011', '0012','0013','0021','0022','0031','0041','0051','0052','0061','NOK_001X','NOK_0012','NOK_0013','NOK_0061']
+    index_capture_param = 0
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot if cobot else Cobot()
@@ -153,6 +157,11 @@ class Controller:
     def get_parameter_list(self): # Simulate parameters
         return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
         
+    def classify(self):
+        model = TFModel(self.model_name)
+        image = self.camera.frame
+        prediction = model.predict(image)
+        print(f'{prediction.label}, {prediction.confidence}' )
 
     def on_event(self, e: keyboard.KeyboardEvent):
         print(f'button {e.name} pressed')
@@ -170,6 +179,13 @@ class Controller:
         elif e.name == 'n':
             print('New Flag')
             self.flag_new_product = True        
+        elif e.name == 'z':
+            print('Classifing Image...')
+            self.classify()
+        elif e.name == 'left':
+            self.index_capture_param -= 1
+        elif e.name == 'right':
+            self.index_capture_param += 1
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode
@@ -177,3 +193,18 @@ class Controller:
             print('Set to manual')
         else:
             print('Set to automatic')
+
+    def generate_report(self):
+        results = []
+        i = 0
+        for p in self.parameter_list:
+            prediction_label = self.predictions[i].split('_')[0]
+            print('Parameter: ', p)
+            print('Predicted: ', prediction_label)
+            if p[4:] == prediction_label:
+                results.append(True)
+            elif prediction_label == 'NOK':
+                results.append(False)
+            else:
+                results.append(False)
+   
