@@ -18,6 +18,7 @@ app/results
 app/temp
 app/temp/*
 app/keras_models/*
+app/screenshots
 
 
 

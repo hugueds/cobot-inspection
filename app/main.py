@@ -37,15 +37,14 @@ while True:  # Put another condition
         continue
 
     if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
-        print("Cobot is on Manual mode")
-        sleep(5)
+        if datetime.now().second % 10 == 0:
+            print("Cobot is on Manual mode")        
         continue
 
-    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:        
-        print("Waiting a new Input...")
-        start = 1
-        sleep(5)
-        if start:
+    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:    
+        if datetime.now().second % 10 == 0:    
+            print("Waiting a new Input...")
+        if controller.flag_new_product:
             logger.info(f'New Popid in Station: {controller.popid}')
             start = False
             controller.new_product()
@@ -107,8 +106,6 @@ while True:  # Put another condition
         controller.set_state(AppState.WAITING_INPUT)
 
     sleep(0.25)
-
-logger.info("Finishing Program")  # In case of breaking
 
 
 # def main():

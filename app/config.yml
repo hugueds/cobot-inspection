@@ -6,8 +6,8 @@ app:
 debug: True
 camera:
   src: 0
-  resolution: '1080x720'
-  fps: 10
+  resolution: '640x480'
+  fps: 15
   folder: 'temp'
   results_folder: 'results'
   debug: True

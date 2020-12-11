@@ -5,7 +5,7 @@ from classes import Controller, Camera
 
 c = Controller()
 
-# c.start_camera()
+c.start_camera()
 
 s = 0
 

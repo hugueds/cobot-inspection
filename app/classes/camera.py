@@ -1,3 +1,4 @@
+from time import sleep
 from models.camera_info import CameraInfo
 import yaml
 from threading import Thread
@@ -16,15 +17,13 @@ class Camera:
     frame_counter = 0
     info_opened = False
 
-    debug = True
-
     def __init__(self, config_path='config.yml'):        
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
         self.image_folder = config['camera']['folder']
         self.results_folder = config['camera']['results_folder']
         self.src = int(config['camera']['src'])
-        self.stream = WebcamVideoStream(self.src, 'WebCam').start()
+        self.debug = config['camera']['debug']        
 
     def config_camera(self, config='config.yml'):
         self.brightness = 0
@@ -37,16 +36,27 @@ class Camera:
         self.thread.start()
 
     def update(self):
-        self.frame = self.stream.read()
-        self.frame_counter = 0        
+        try:        
+            if not self.debug:
+                self.stream = WebcamVideoStream(self.src, 'WebCam').start()
+                self.frame = self.stream.read()
+            self.frame_counter = 0
 
-        while not self.stopped:
-            self.frame_counter += 1
-            self.frame = self.stream.read()
-            cv.imshow('main', self.frame)
-            key = cv.waitKey(1) & 0xFF
-            if key == ord('q'):
-                self.stopped = True
+            while not self.stopped:
+                self.frame_counter += 1
+                if not self.debug:
+                    self.frame = self.stream.read()
+                self.frame = cv.flip(self.frame, 0)
+                cv.imshow('main', self.frame)
+                key = cv.waitKey(1) & 0xFF
+                if key == ord('q'):
+                    self.stopped = True
+        except Exception as e:
+            print(e)
+            self.stream.stop()
+            sleep(5)
+            print('Trying to reopen the camera')
+            self.start()
 
         cv.destroyAllWindows()
 
@@ -67,6 +77,14 @@ class Camera:
         path = f'{self.image_folder}/{filename}.jpg'
         print('Saving File: ', filename)
         cv.imwrite(path, self.frame)   
+
+    def save_screenshot(self, filename=''):
+        dt = datetime.now()
+        date_str = dt.strftime('%Y%m%d_%H%M%S')
+        filename =  f'{date_str}_{filename}'
+        path = f'screenshot/{filename}.jpg'
+        print('Saving File: ', filename)
+        cv.imwrite(path, self.frame)  
 
     def write_results(self, image: np.ndarray, prediction: Prediction):
         edited_image = image.copy()        

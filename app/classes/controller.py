@@ -8,8 +8,9 @@ from enumerables import AppState
 from classes.cobot import Cobot
 from classes.camera import Camera
 from models import CameraInfo
+import keyboard
 
-debug = False
+debug = True
 
 if not debug:
     from classes.TFModel import TFModel
@@ -36,11 +37,13 @@ class Controller:
     popid = '999999'
     model_name = '0000'
     parameter = ''
+    flag_new_product = False
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot if cobot else Cobot()
         self.camera = camera if camera else Camera()
         self.display_info()
+        keyboard.on_press(self.on_event)
 
     def connect_to_cobot(self):
         self.cobot.connect()
@@ -150,3 +153,27 @@ class Controller:
     def get_parameter_list(self): # Simulate parameters
         return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
         
+
+    def on_event(self, e: keyboard.KeyboardEvent):
+        print(f'button {e.name} pressed')
+        if e.name == 'm':
+            self.change_auto_man()
+        elif e.name.isdigit():
+            print('Set Program ' + e.name)
+            self.set_program(int(e.name))
+        elif e.name == 't':
+            print('Trigger After Pose')
+            self.trigger_after_pose()
+        elif e.name == 's':
+            print('Saving Screen Shot...')
+            self.camera.save_screenshot(str(self.program))
+        elif e.name == 'n':
+            print('New Flag')
+            self.flag_new_product = True        
+
+    def change_auto_man(self):
+        self.manual_mode = not self.manual_mode
+        if self.manual_mode:
+            print('Set to manual')
+        else:
+            print('Set to automatic')
