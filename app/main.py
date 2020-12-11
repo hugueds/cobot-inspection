@@ -37,9 +37,9 @@ while True:  # Put another condition
         continue
 
     if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
-        if datetime.now().second % 10 == 0:
-            print("Cobot is on Manual mode")        
         continue
+        # if datetime.now().second % 20 == 0:
+        #     # print("Cobot is on Manual mode")        
 
     if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:    
         if datetime.now().second % 10 == 0:    

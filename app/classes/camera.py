@@ -23,7 +23,10 @@ class Camera:
         self.image_folder = config['camera']['folder']
         self.results_folder = config['camera']['results_folder']
         self.src = int(config['camera']['src'])
-        self.debug = config['camera']['debug']        
+        self.debug = config['camera']['debug']
+        if not self.debug:
+            self.stream = WebcamVideoStream(self.src, 'WebCam').start()
+
 
     def config_camera(self, config='config.yml'):
         self.brightness = 0
@@ -37,20 +40,23 @@ class Camera:
 
     def update(self):
         try:        
-            if not self.debug:
-                self.stream = WebcamVideoStream(self.src, 'WebCam').start()
-                self.frame = self.stream.read()
             self.frame_counter = 0
 
+            if not self.debug:
+                self.frame = self.stream.read()
+
             while not self.stopped:
-                self.frame_counter += 1
                 if not self.debug:
                     self.frame = self.stream.read()
+
                 self.frame = cv.flip(self.frame, 0)
                 cv.imshow('main', self.frame)
+                self.frame_counter += 1
+
                 key = cv.waitKey(1) & 0xFF
                 if key == ord('q'):
                     self.stopped = True
+
         except Exception as e:
             print(e)
             self.stream.stop()
@@ -82,13 +88,12 @@ class Camera:
         dt = datetime.now()
         date_str = dt.strftime('%Y%m%d_%H%M%S')
         filename =  f'{date_str}_{filename}'
-        path = f'screenshot/{filename}.jpg'
+        path = f'screenshots/{filename}.jpg'
         print('Saving File: ', filename)
         cv.imwrite(path, self.frame)  
 
     def write_results(self, image: np.ndarray, prediction: Prediction):
-        edited_image = image.copy()        
-        print(type(image))
+        edited_image = image.copy()
         rows, _, _ = image.shape
         edited_image[int(rows * 0.93):, :, :] = 0
         font = cv.FONT_HERSHEY_SIMPLEX
@@ -109,8 +114,7 @@ class Camera:
         info_frame = np.zeros((480, 640), dtype=np.uint8)
         font = cv.FONT_HERSHEY_SIMPLEX
         p = 20
-        o = 25
-        i = 0
+        o = 25        
         cv.putText(info_frame, 'POPID: ' + info.popid, (10, p+0*o), font, 0.7, 255, 2)
         cv.putText(info_frame, 'STATE: ' + info.state, (10, p+1*o), font, 0.7, 255, 2)
         cv.putText(info_frame, 'CU: ' + info.cu, (10, p+2*o), font, 0.7, 255, 2)

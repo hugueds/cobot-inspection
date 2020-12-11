@@ -48,10 +48,11 @@ class Cobot:
         self.set_trigger()
 
     def set_trigger(self, value=1):
-        self.trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
-        if not self.trigger:
+        trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
+        if value != trigger:
+            self.trigger = value
             self.__write_register(ModbusInterface.START_TRIGGER.value, value)    
-        
+
     def move_to_waiting(self):
         self.selected_program = 0
         self.set_program(self.selected_program)
