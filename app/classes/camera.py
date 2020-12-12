@@ -7,6 +7,9 @@ import cv2 as cv
 import numpy as np
 from imutils.video.webcamvideostream import WebcamVideoStream
 from models import Prediction
+
+red = (0,0,255)
+green = (0, 255, 0)
 class Camera:
 
     src = 0
@@ -42,14 +45,17 @@ class Camera:
         try:        
             self.frame_counter = 0
 
-            if not self.debug:
-                self.frame = self.stream.read()
-
             while not self.stopped:
                 if not self.debug:
-                    self.frame = self.stream.read()
+                    frame = self.stream.read()
+                    cut_frame = frame[:, 80:-80]
+                    self.frame = cut_frame
+                else:
+                    cut_frame = self.frame
 
                 flipped = cv.flip(self.frame, 0)
+                flipped = cv.flip(flipped, 1)
+                # flipped = cv.flip(self.frame, 1)
                 cv.imshow('main', flipped)
                 self.frame_counter += 1
 
@@ -111,24 +117,31 @@ class Camera:
 
     def display_info(self, info: CameraInfo):
 
-        info_frame = np.zeros((480, 640, 3), dtype=np.uint8)
+        info_frame = np.zeros((720, 640, 3), dtype=np.uint8)
         font = cv.FONT_HERSHEY_SIMPLEX
         p = 20
         o = 25        
-        cv.putText(info_frame, 'POPID: ' + info.popid, (10, p+0*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'STATE: ' + info.state, (10, p+1*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'CU: ' + info.cu, (10, p+2*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (10, p+3*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'PROGRAM: ' + info.program, (10, p+4*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (10, p+5*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'MANUAL: ' + info.manual, (10, p+6*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (10, p+7*o), font, 0.7, 255, 2)        
-        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (10, p+8*o), font, 0.7, 255, 2)
-        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (10, p+9*o), font, 0.7, 255, 2)
-        if len(info.results == info.parameters):
-            for i in range(len(info.parameter)):
-                color = (0,255,0) if info.parameter[i] == info.results[i] else (0,0,255)
-                cv.putText(info_frame, info.parameter[i], (10, p+12*o + i * o), font, 0.7, color, 2)
+        cv.putText(info_frame, 'POPID: ' + info.popid, (10, p+0*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'STATE: ' + info.state, (10, p+1*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'CU: ' + info.cu, (10, p+2*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (10, p+3*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'PROGRAM: ' + info.program, (10, p+4*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (10, p+5*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'MANUAL: ' + info.manual, (10, p+6*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (10, p+7*o), font, 0.7, (255,255,255), 2)        
+        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (10, p+8*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (10, p+9*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, "LAST RESULTS: ", (10, p + 11*o ), font, 0.5, (0,255,0), 2)
+        
+        if len(info.results):
+            print('TEST 1')
+            for i in range(len(info.results)):
+                print(f'TEST {i}')
+                color = green if info.results[i] else red
+                parameter = info.parameters[i]
+                result = info.results[i]
+                cv.putText(info_frame, f"PARAMETER: {parameter}, RESULT: {result}", (10, p + (12+i)*o ), font, 0.6, color, 1)
+        
         cv.imshow('info', info_frame)
         cv.waitKey(1) & 0xFF
 

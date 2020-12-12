@@ -1,16 +1,20 @@
 import os
+from typing import List
 import cv2 as cv
 from pathlib import Path
 from threading import Thread
 from datetime import datetime
 from time import sleep
+
+from numpy.core.records import array
 from enumerables import AppState
 from classes.cobot import Cobot
 from classes.camera import Camera
-from models import CameraInfo, prediction
+from models import CameraInfo, Prediction
 import keyboard
 
-debug = True
+debug = False
+# debug = True
 
 if not debug:
     from classes.TFModel import TFModel
@@ -38,7 +42,8 @@ class Controller:
     model_name = '0000'
     parameter = ''
     flag_new_product = False
-    predictions = []
+
+    predictions : List[Prediction]
     results = []
 
 
@@ -137,12 +142,14 @@ class Controller:
             os.remove(f'{folder}/{f}')
 
     def process_images(self):
+        self.predictions = []
         model = TFModel(self.model_name)
         folder = self.camera.image_folder
         for image_file in os.listdir(folder):
             if image_file.split('.')[-1] in ['png', 'jpg']:                
                 image = cv.imread(f'{folder}/{image_file}')
-                prediction = model.predict(image)                
+                prediction = model.predict(image)
+                self.predictions.append(prediction)
                 edited_image = self.camera.write_results(image, prediction)                
                 path = f'results/{self.popid}/{self.component_unit}/'
                 Path(path).mkdir(parents=True, exist_ok=True)                
@@ -155,7 +162,7 @@ class Controller:
         self.camera.save_image(filename)
 
     def get_parameter_list(self): # Simulate parameters
-        return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
+        return ['PV110011', 'PV110021', 'PV110031']#, 'PV110041', 'PV110051', 'PV110061'] # Example
         
     def classify(self):
         model = TFModel(self.model_name)
@@ -192,10 +199,11 @@ class Controller:
             print('Set to automatic')
 
     def generate_report(self):
+        print('Generating Results...')
         self.results = []
         i = 0
-        for p in self.parameter_list:
-            prediction_label = self.predictions[i].split('_')[0]
+        for p in self.parameter_list:            
+            prediction_label = self.predictions[i].label.split('_')[0]
             print('Parameter: ', p)
             print('Predicted: ', prediction_label)
             if p[4:] == prediction_label:

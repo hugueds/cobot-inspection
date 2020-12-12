@@ -24,7 +24,7 @@ class TFModel:
     def predict(self, image) -> Prediction:
         global models
 
-        image = cv.resize(image, (224,224), cv.INTER_AREA)
+        image = cv.resize(image, (224,224))
         image = (image / 127.0) - 1        
         image = image.reshape(1, 224, 224, 3)
 

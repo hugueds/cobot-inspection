@@ -46,6 +46,7 @@ while True:  # Put another condition
     if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:            
         print("Waiting a new Input...")
         if controller.flag_new_product:
+            controller.flag_new_product = False
             logger.info(f'New Popid in Station: {controller.popid}')
             start = False
             controller.new_product()
