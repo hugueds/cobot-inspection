@@ -5,21 +5,25 @@ from classes import Controller, controller
 from enumerables import PositionStatus, AppState, CobotStatus
 from models.result import Result
 
+debug = True
 
 controller = Controller()
 
 controller.connect_to_cobot()
 controller.start_camera()
 
+sleep(2)
+
 # check if robot is on running State
 while controller.cobot.status != CobotStatus.RUNNING:
     logger.warning(f"Cobot is not ready for work... Status: {controller.cobot.status}")
     sleep(5)
 
-while not controller.cobot.position_status == PositionStatus.HOME:
-    print("Waiting Cobot reach the Home position")
-    logger.info("Waiting Cobot reach in Home position")
-    sleep(5)
+if not debug:
+    while not controller.cobot.position_status == PositionStatus.HOME:
+        print("Waiting Cobot reach the Home position")
+        logger.info("Waiting Cobot reach in Home position")
+        sleep(5)
 
 controller.set_state(AppState.WAITING_INPUT)
 
@@ -37,13 +41,10 @@ while True:  # Put another condition
         continue
 
     if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
-        continue
-        # if datetime.now().second % 20 == 0:
-        #     # print("Cobot is on Manual mode")        
+        continue        
 
-    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:    
-        if datetime.now().second % 10 == 0:    
-            print("Waiting a new Input...")
+    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:            
+        print("Waiting a new Input...")
         if controller.flag_new_product:
             logger.info(f'New Popid in Station: {controller.popid}')
             start = False
@@ -99,9 +100,9 @@ while True:  # Put another condition
     elif controller.state == AppState.PROCESSING_IMAGES:
         logger.info('Start Processing the saved images')                
         controller.process_images()
-        controller.operation_result = 1 if True else False
-        controller.final_datetime = datetime.now()
-        total_time = (controller.start_datetime - controller.final_datetime).seconds        
+        controller.generate_report()
+        controller.operation_result = 1 if True else False        
+        total_time = (datetime.now() - controller.start_datetime).seconds        
         logger.info(f"Total operation time: {total_time}")
         controller.set_state(AppState.WAITING_INPUT)
 

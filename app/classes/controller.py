@@ -10,7 +10,7 @@ from classes.camera import Camera
 from models import CameraInfo, prediction
 import keyboard
 
-debug = False
+debug = True
 
 if not debug:
     from classes.TFModel import TFModel
@@ -39,9 +39,8 @@ class Controller:
     parameter = ''
     flag_new_product = False
     predictions = []
+    results = []
 
-    capture_list = ['0011', '0012','0013','0021','0022','0031','0041','0051','0052','0061','NOK_001X','NOK_0012','NOK_0013','NOK_0061']
-    index_capture_param = 0
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot if cobot else Cobot()
@@ -126,7 +125,9 @@ class Controller:
             info.manual = str(self.manual_mode)
             info.jobtime = str((datetime.now() - self.job_datetime).seconds)
             info.uptime = str((datetime.now() - self.start_datetime).seconds)
-            info.message = '[INFO] Message Test'            
+            info.message = '[INFO] Message Test'
+            info.results = self.results
+            info.parameters = self.parameter_list
             self.camera.display_info(info)        
 
     def clear_folder(self):
@@ -141,8 +142,7 @@ class Controller:
         for image_file in os.listdir(folder):
             if image_file.split('.')[-1] in ['png', 'jpg']:                
                 image = cv.imread(f'{folder}/{image_file}')
-                prediction = model.predict(image)
-                # print(prediction)
+                prediction = model.predict(image)                
                 edited_image = self.camera.write_results(image, prediction)                
                 path = f'results/{self.popid}/{self.component_unit}/'
                 Path(path).mkdir(parents=True, exist_ok=True)                
@@ -165,8 +165,8 @@ class Controller:
 
     def on_event(self, e: keyboard.KeyboardEvent):
         print(f'button {e.name} pressed')
-        if e.name == 'm':
-            self.change_auto_man()
+        if e.name == 'm':            
+            self.change_auto_man()            
         elif e.name.isdigit():
             print('Set Program ' + e.name)
             self.set_program(int(e.name))
@@ -181,30 +181,28 @@ class Controller:
             self.flag_new_product = True        
         elif e.name == 'z':
             print('Classifing Image...')
-            self.classify()
-        elif e.name == 'left':
-            self.index_capture_param -= 1
-        elif e.name == 'right':
-            self.index_capture_param += 1
+            self.classify()        
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode
         if self.manual_mode:
             print('Set to manual')
+            self.state == AppState.WAITING_INPUT
         else:
             print('Set to automatic')
 
     def generate_report(self):
-        results = []
+        self.results = []
         i = 0
         for p in self.parameter_list:
             prediction_label = self.predictions[i].split('_')[0]
             print('Parameter: ', p)
             print('Predicted: ', prediction_label)
             if p[4:] == prediction_label:
-                results.append(True)
+                self.results.append(True)
             elif prediction_label == 'NOK':
-                results.append(False)
+                self.results.append(False)
             else:
-                results.append(False)
+                self.results.append(False)
+            i += 1
    

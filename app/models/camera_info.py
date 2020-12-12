@@ -12,6 +12,9 @@ class CameraInfo:
     jobtime = ''
     uptime = ''
     message = ''
+    final_result = ''
+    results = []
+    parameters = []
 
     def __init__(self):
         pass

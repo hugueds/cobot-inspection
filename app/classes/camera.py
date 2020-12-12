@@ -49,8 +49,8 @@ class Camera:
                 if not self.debug:
                     self.frame = self.stream.read()
 
-                self.frame = cv.flip(self.frame, 0)
-                cv.imshow('main', self.frame)
+                flipped = cv.flip(self.frame, 0)
+                cv.imshow('main', flipped)
                 self.frame_counter += 1
 
                 key = cv.waitKey(1) & 0xFF
@@ -111,7 +111,7 @@ class Camera:
 
     def display_info(self, info: CameraInfo):
 
-        info_frame = np.zeros((480, 640), dtype=np.uint8)
+        info_frame = np.zeros((480, 640, 3), dtype=np.uint8)
         font = cv.FONT_HERSHEY_SIMPLEX
         p = 20
         o = 25        
@@ -125,6 +125,10 @@ class Camera:
         cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (10, p+7*o), font, 0.7, 255, 2)        
         cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (10, p+8*o), font, 0.7, 255, 2)
         cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (10, p+9*o), font, 0.7, 255, 2)
+        if len(info.results == info.parameters):
+            for i in range(len(info.parameter)):
+                color = (0,255,0) if info.parameter[i] == info.results[i] else (0,0,255)
+                cv.putText(info_frame, info.parameter[i], (10, p+12*o + i * o), font, 0.7, color, 2)
         cv.imshow('info', info_frame)
         cv.waitKey(1) & 0xFF
 
