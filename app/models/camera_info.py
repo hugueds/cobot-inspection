@@ -1,3 +1,6 @@
+from typing import List
+from models.prediction import Prediction
+
 class CameraInfo:
 
     state = ''
@@ -13,8 +16,9 @@ class CameraInfo:
     uptime = ''
     message = ''
     final_result = ''
-    results = []
     parameters = []
+    predictions: List[Prediction] = [] 
+    results: List[bool] = []
 
     def __init__(self):
         pass

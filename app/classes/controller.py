@@ -43,7 +43,7 @@ class Controller:
     parameter = ''
     flag_new_product = False
 
-    predictions : List[Prediction]
+    predictions : List[Prediction] = []
     results = []
 
 
@@ -131,8 +131,9 @@ class Controller:
             info.jobtime = str((datetime.now() - self.job_datetime).seconds)
             info.uptime = str((datetime.now() - self.start_datetime).seconds)
             info.message = '[INFO] Message Test'
-            info.results = self.results
             info.parameters = self.parameter_list
+            info.predictions = self.predictions
+            info.results = self.results
             self.camera.display_info(info)        
 
     def clear_folder(self):
@@ -162,7 +163,8 @@ class Controller:
         self.camera.save_image(filename)
 
     def get_parameter_list(self): # Simulate parameters
-        return ['PV110011', 'PV110021', 'PV110031']#, 'PV110041', 'PV110051', 'PV110061'] # Example
+        # return ['PV110013']
+        return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
         
     def classify(self):
         model = TFModel(self.model_name)

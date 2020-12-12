@@ -6,7 +6,7 @@ from datetime import datetime
 import cv2 as cv
 import numpy as np
 from imutils.video.webcamvideostream import WebcamVideoStream
-from models import Prediction
+from models import Prediction, prediction
 
 red = (0,0,255)
 green = (0, 255, 0)
@@ -88,7 +88,8 @@ class Camera:
         filename =  f'{date_str}_{filename}'
         path = f'{self.image_folder}/{filename}.jpg'
         print('Saving File: ', filename)
-        cv.imwrite(path, self.frame)   
+        flipped = cv.flip(self.frame, 1)
+        cv.imwrite(path, flipped)   
 
     def save_screenshot(self, filename=''):
         dt = datetime.now()
@@ -131,16 +132,14 @@ class Camera:
         cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (10, p+7*o), font, 0.7, (255,255,255), 2)        
         cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (10, p+8*o), font, 0.7, (255,255,255), 2)
         cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (10, p+9*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, "LAST RESULTS: ", (10, p + 11*o ), font, 0.5, (0,255,0), 2)
+        cv.putText(info_frame, "LAST RESULTS: ", (10, p + 11*o ), font, 0.5, (255,255,0), 2)
         
-        if len(info.results):
-            print('TEST 1')
-            for i in range(len(info.results)):
-                print(f'TEST {i}')
+        if len(info.predictions) and len(info.results) and len(info.results) == len(info.predictions):
+            for i in range(len(info.parameters)):                
                 color = green if info.results[i] else red
                 parameter = info.parameters[i]
-                result = info.results[i]
-                cv.putText(info_frame, f"PARAMETER: {parameter}, RESULT: {result}", (10, p + (12+i)*o ), font, 0.6, color, 1)
+                prediction = info.predictions[i].label
+                cv.putText(info_frame, f"PARAMETER: {parameter}, RESULT: {prediction}", (10, p + (12+i)*o ), font, 0.6, color, 2)
         
         cv.imshow('info', info_frame)
         cv.waitKey(1) & 0xFF
