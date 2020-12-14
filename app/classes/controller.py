@@ -5,8 +5,6 @@ from pathlib import Path
 from threading import Thread
 from datetime import datetime
 from time import sleep
-
-from numpy.core.records import array
 from enumerables import AppState
 from classes.cobot import Cobot
 from classes.camera import Camera
@@ -151,7 +149,8 @@ class Controller:
                 image = cv.imread(f'{folder}/{image_file}')
                 prediction = model.predict(image)
                 self.predictions.append(prediction)
-                edited_image = self.camera.write_results(image, prediction)                
+                # edited_image = self.camera.create_subtitle(image, prediction)
+                edited_image = image
                 path = f'results/{self.popid}/{self.component_unit}/'
                 Path(path).mkdir(parents=True, exist_ok=True)                
                 path = f'{path}/{image_file}'
@@ -174,13 +173,13 @@ class Controller:
 
     def on_event(self, e: keyboard.KeyboardEvent):
         print(f'button {e.name} pressed')
-        if e.name == 'm':            
+        if e.name == 'm':
+            self.state = self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()            
         elif e.name.isdigit():
-            print('Set Program ' + e.name)
+            print('Set Manual Program ' + e.name)
             self.set_program(int(e.name))
-        elif e.name == 't':
-            print('Trigger After Pose')
+        elif e.name == 't':            
             self.trigger_after_pose()
         elif e.name == 's':
             print('Saving Screen Shot...')

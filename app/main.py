@@ -26,6 +26,7 @@ if not debug:
         sleep(5)
 
 controller.set_state(AppState.WAITING_INPUT)
+print('Waiting for an Input...')
 
 while True:  # Put another condition
 
@@ -44,11 +45,10 @@ while True:  # Put another condition
         continue        
 
     if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:            
-        print("Waiting a new Input...")
+        # print("Waiting a new Input...")
         if controller.flag_new_product:
             controller.flag_new_product = False
-            logger.info(f'New Popid in Station: {controller.popid}')
-            start = False
+            logger.info(f'New Popid in Station: {controller.popid}')            
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
 

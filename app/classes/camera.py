@@ -10,6 +10,9 @@ from models import Prediction, prediction
 
 red = (0,0,255)
 green = (0, 255, 0)
+yellow = (0,200,200)
+
+font = cv.FONT_HERSHEY_SIMPLEX
 class Camera:
 
     src = 0
@@ -46,16 +49,14 @@ class Camera:
             self.frame_counter = 0
 
             while not self.stopped:
+                cut_frame = self.frame
                 if not self.debug:
                     frame = self.stream.read()
                     cut_frame = frame[:, 80:-80]
-                    self.frame = cut_frame
-                else:
-                    cut_frame = self.frame
 
-                flipped = cv.flip(self.frame, 0)
-                flipped = cv.flip(flipped, 1)
-                # flipped = cv.flip(self.frame, 1)
+                self.frame = cut_frame
+                flipped = cv.flip(cut_frame, 0)
+                flipped = cv.flip(flipped, 1)                
                 cv.imshow('main', flipped)
                 self.frame_counter += 1
 
@@ -67,7 +68,8 @@ class Camera:
             print(e)
             self.stream.stop()
             sleep(5)
-            print('Trying to reopen the camera')
+            print('Trying to reopen the camera')            
+            self.stream = WebcamVideoStream(self.src, 'WebCam').start()
             self.start()
 
         cv.destroyAllWindows()
@@ -99,15 +101,14 @@ class Camera:
         print('Saving File: ', filename)
         cv.imwrite(path, self.frame)  
 
-    def write_results(self, image: np.ndarray, prediction: Prediction):
+    def create_subtitle(self, image: np.ndarray, prediction: Prediction):
         edited_image = image.copy()
-        rows, _, _ = image.shape
-        edited_image[int(rows * 0.93):, :, :] = 0
-        font = cv.FONT_HERSHEY_SIMPLEX
-        color = (0,200,200)
+        rows, _, _ = edited_image.shape
+        edited_image[int(rows * 0.93):, :, :] = 0                
         text = f"LABEL: {prediction.label}, ACCURACY: {round( (prediction.confidence * 100), 2)}%"
-        cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.70, color, 2)
+        cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.70, yellow, 2)
         return edited_image
+        
         
     def save_result(self, image: np.ndarray, save_path, file):
         path = f'results/{save_path}/{file}'
@@ -118,28 +119,28 @@ class Camera:
 
     def display_info(self, info: CameraInfo):
 
-        info_frame = np.zeros((720, 640, 3), dtype=np.uint8)
-        font = cv.FONT_HERSHEY_SIMPLEX
+        info_frame = np.zeros((720, 640, 3), dtype=np.uint8)        
+        s = 10
         p = 20
-        o = 25        
-        cv.putText(info_frame, 'POPID: ' + info.popid, (10, p+0*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'STATE: ' + info.state, (10, p+1*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'CU: ' + info.cu, (10, p+2*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (10, p+3*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'PROGRAM: ' + info.program, (10, p+4*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (10, p+5*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'MANUAL: ' + info.manual, (10, p+6*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (10, p+7*o), font, 0.7, (255,255,255), 2)        
-        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (10, p+8*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (10, p+9*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, "LAST RESULTS: ", (10, p + 11*o ), font, 0.5, (255,255,0), 2)
+        o = 25
+        cv.putText(info_frame, 'POPID: ' + info.popid, (s, p+0*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'CU: ' + info.cu, (s, p+2*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, (255,255,255), 2)        
+        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, (255,255,255), 2)
+        cv.putText(info_frame, "LAST RESULTS: ", (s, p + 11*o ), font, 0.5, (255,255,0), 2)
         
         if len(info.predictions) and len(info.results) and len(info.results) == len(info.predictions):
             for i in range(len(info.parameters)):                
                 color = green if info.results[i] else red
                 parameter = info.parameters[i]
                 prediction = info.predictions[i].label
-                cv.putText(info_frame, f"PARAMETER: {parameter}, RESULT: {prediction}", (10, p + (12+i)*o ), font, 0.6, color, 2)
+                cv.putText(info_frame, f"PARAMETER: {parameter}, RESULT: {prediction}", (s, p + (12+i)*o ), font, 0.6, color, 2)
         
         cv.imshow('info', info_frame)
         cv.waitKey(1) & 0xFF
