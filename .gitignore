@@ -22,4 +22,5 @@ app/keras_models/*
 app/screenshots
 
 
-
+machine_learning
+logs

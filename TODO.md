@@ -16,5 +16,4 @@
     - [ ] Como elas poderiam vir no futuro?
     - [ ] Como as válvulas poderiam estar dispostas?
     - [ ] Quais são todas as combinações possíveis?
-    - [ ] Quais seriam as dimensões para a "bandeija" 
     

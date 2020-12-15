@@ -5,7 +5,11 @@ import os
 from tensorflow.keras.models import load_model
 from models import Prediction
 from logger import logger
-    
+from PIL import Image, ImageOps
+
+
+np.set_printoptions(suppress=True)
+
 models = {}
 
 class TFModel: 
@@ -21,23 +25,34 @@ class TFModel:
         except Exception as e:            
             logger.error('TFModel::__init__::Invalid Model Configuration::'+str(e))
     
-    def predict(self, image) -> Prediction:
+    def predict(self, image:np.ndarray) -> Prediction:
         global models
 
-        image = cv.resize(image, (224,224))
-        image = (image / 127.0) - 1        
-        image = image.reshape(1, 224, 224, 3)
+        size = 127
+        channels = 1
+        if channels == 1:
+            image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+            
+        image = cv.resize(image, (size, size), cv.INTER_AREA)
+        image = (image / 127.0) - 1
+        image = image.reshape(1, size, size, channels)
 
-        self.load_single_model()        
-        
-        prediction = { 'label':  '', 'confidence': 0.0 }
+        self.load_single_model()               
+
         net = models[self.name]['graph']
-        res = net.predict(image)        
+        res = net.predict(image)
         index = int(res.argmax(axis=1)[0])        
         label = models[self.name]['labels'][index].upper()
         confidence = float(round(res[0][index], 2))        
         return Prediction(label, confidence)
 
+
+    def predict_keras(self, image):
+        data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
+        image_array = np.asarray(image)
+        normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
+        data[0] = normalized_image_array
+        pass
 
     def load_single_model(self):
         global models

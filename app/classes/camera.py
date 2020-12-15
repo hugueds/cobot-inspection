@@ -11,6 +11,8 @@ from models import Prediction, prediction
 red = (0,0,255)
 green = (0, 255, 0)
 yellow = (0,200,200)
+white = (255,255,255)
+cyan = (255,255,0)
 
 font = cv.FONT_HERSHEY_SIMPLEX
 class Camera:
@@ -48,11 +50,12 @@ class Camera:
         try:        
             self.frame_counter = 0
 
-            while not self.stopped:
+            while not self.stream.stopped:
                 cut_frame = self.frame
                 if not self.debug:
                     frame = self.stream.read()
-                    cut_frame = frame[:, 80:-80]
+                    cut_frame = frame
+                    # cut_frame = frame[:, 70:-70] if use the teablemachine models
 
                 self.frame = cut_frame
                 flipped = cv.flip(cut_frame, 0)
@@ -60,8 +63,7 @@ class Camera:
                 cv.imshow('main', flipped)
                 self.frame_counter += 1
 
-                key = cv.waitKey(1) & 0xFF
-                if key == ord('q'):
+                if cv.waitKey(1) & 0xFF == ord('q'):
                     self.stopped = True
 
         except Exception as e:
@@ -117,23 +119,22 @@ class Camera:
     def display(self):
         self.openned = not self.openned
 
-    def display_info(self, info: CameraInfo):
-
+    def display_info(self, info: CameraInfo):        
         info_frame = np.zeros((720, 640, 3), dtype=np.uint8)        
         s = 10
         p = 20
         o = 25
-        cv.putText(info_frame, 'POPID: ' + info.popid, (s, p+0*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'CU: ' + info.cu, (s, p+2*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, (255,255,255), 2)        
-        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, (255,255,255), 2)
-        cv.putText(info_frame, "LAST RESULTS: ", (s, p + 11*o ), font, 0.5, (255,255,0), 2)
+        cv.putText(info_frame, 'POPID: ' + info.popid, (s, p+0*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'CU: ' + info.cu, (s, p+2*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, white, 2)
+        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, white, 2)        
+        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, white, 2)
+        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, white, 2)
+        cv.putText(info_frame, "LAST RESULTS: ", (s, p + 11*o ), font, 0.5, cyan, 2)
         
         if len(info.predictions) and len(info.results) and len(info.results) == len(info.predictions):
             for i in range(len(info.parameters)):                

@@ -1,6 +1,9 @@
 import os
+import json
+import yaml
 from typing import List
 import cv2 as cv
+from PIL import Image, ImageOps
 from pathlib import Path
 from threading import Thread
 from datetime import datetime
@@ -11,7 +14,11 @@ from classes.camera import Camera
 from models import CameraInfo, Prediction
 import keyboard
 
-debug = False
+with open('config.yml') as f:
+    config = yaml.safe_load(f)
+    debug = config['debug']
+
+# debug = False
 # debug = True
 
 if not debug:
@@ -20,10 +27,12 @@ if not debug:
 waiting_program = 0
 home_program = 99
 trigger_afterpose = 2
+
+
 class Controller:
 
-    state = AppState.INITIAL      
-    operation_result = 0 # 0 -> None, 1 -> OK, 2 -> NOT_OK
+    state: AppState = AppState.INITIAL
+    operation_result = 0  # 0 -> None, 1 -> OK, 2 -> NOT_OK
     total_programs = 0
     program_list = []
     parameter_list = []
@@ -41,9 +50,8 @@ class Controller:
     parameter = ''
     flag_new_product = False
 
-    predictions : List[Prediction] = []
+    predictions: List[Prediction] = []
     results = []
-
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
         self.cobot = cobot if cobot else Cobot()
@@ -70,19 +78,16 @@ class Controller:
         self.parameter_list = []
         self.program_list = []
         self.pose_times = []
-        self.popid = '999999'        
+        self.popid = '999999'
         self.parameters_found = False
         self.total_programs = 0
 
-    def load_parameters(self): # Fazer download do SQL
-        self.parameter_list = self.get_parameter_list()
-        self.program_list = [int(x[5:7]) for x in self.parameter_list] # carrega a lista de LTs e separa a lista de parametros
+    def load_parameters(self):  # Fazer download do SQL
+        self.parameter_list = self.get_parameter_list()        
+        self.program_list = [int(x[5:7]) for x in self.parameter_list]
         self.total_programs = len(self.program_list)
         self.parameters_found = True
-        self.parameter = self.parameter_list[0]    
-
-    def load_images(self):
-        pass
+        self.parameter = self.parameter_list[0]
 
     def next_pose(self):
         self.program = self.program_list[self.program_index]
@@ -109,7 +114,7 @@ class Controller:
         while self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
             self.cobot.update_interface(self.state)
-            sleep(0.25)
+            sleep(0.2)
         else:
             print('Update Cobot Interface has stopped')
 
@@ -118,7 +123,7 @@ class Controller:
         info = CameraInfo()
         while True:
             info.state = self.state.name
-            info.cu =  self.component_unit
+            info.cu = self.component_unit
             info.popid = self.popid
             info.parameter = self.parameter
             info.program = str(self.program)
@@ -132,7 +137,7 @@ class Controller:
             info.parameters = self.parameter_list
             info.predictions = self.predictions
             info.results = self.results
-            self.camera.display_info(info)        
+            self.camera.display_info(info)
 
     def clear_folder(self):
         folder = self.camera.image_folder
@@ -145,51 +150,35 @@ class Controller:
         model = TFModel(self.model_name)
         folder = self.camera.image_folder
         for image_file in os.listdir(folder):
-            if image_file.split('.')[-1] in ['png', 'jpg']:                
+            if image_file.split('.')[-1] in ['png', 'jpg']:
                 image = cv.imread(f'{folder}/{image_file}')
                 prediction = model.predict(image)
+                print(prediction.label, prediction.confidence)
                 self.predictions.append(prediction)
                 # edited_image = self.camera.create_subtitle(image, prediction)
                 edited_image = image
                 path = f'results/{self.popid}/{self.component_unit}/'
-                Path(path).mkdir(parents=True, exist_ok=True)                
+                Path(path).mkdir(parents=True, exist_ok=True)
                 path = f'{path}/{image_file}'
-                cv.imwrite(path, edited_image)
-        
+                # cv.imwrite(path, edited_image)
+
     def save_image(self):
+        sleep(0.2)
         parameter = self.parameter_list[self.program_index - 1]
         filename = f'{self.program_index}_{parameter}'
         self.camera.save_image(filename)
 
-    def get_parameter_list(self): # Simulate parameters
-        # return ['PV110013']
-        return ['PV110011', 'PV110021', 'PV110031', 'PV110041', 'PV110051', 'PV110061'] # Example
-        
+    def get_parameter_list(self, index=0):  # Simulate parameters        
+        with open('./data/mock_request.json') as f:
+            file = json.load(f)
+        self.popid = file['data'][index]['popid'] # Only in tests
+        return file['data'][index]['lts']
+
     def classify(self):
         model = TFModel(self.model_name)
         image = self.camera.frame
         prediction = model.predict(image)
-        print(f'{prediction.label}, {prediction.confidence}' )
-
-    def on_event(self, e: keyboard.KeyboardEvent):
-        print(f'button {e.name} pressed')
-        if e.name == 'm':
-            self.state = self.set_state(AppState.WAITING_INPUT)
-            self.change_auto_man()            
-        elif e.name.isdigit():
-            print('Set Manual Program ' + e.name)
-            self.set_program(int(e.name))
-        elif e.name == 't':            
-            self.trigger_after_pose()
-        elif e.name == 's':
-            print('Saving Screen Shot...')
-            self.camera.save_screenshot(str(self.program))
-        elif e.name == 'n':
-            print('New Flag')
-            self.flag_new_product = True        
-        elif e.name == 'z':
-            print('Classifing Image...')
-            self.classify()        
+        print(f'{prediction.label}, {prediction.confidence}')
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode
@@ -203,7 +192,7 @@ class Controller:
         print('Generating Results...')
         self.results = []
         i = 0
-        for p in self.parameter_list:            
+        for p in self.parameter_list:
             prediction_label = self.predictions[i].label.split('_')[0]
             print('Parameter: ', p)
             print('Predicted: ', prediction_label)
@@ -214,4 +203,24 @@ class Controller:
             else:
                 self.results.append(False)
             i += 1
-   
+
+
+    def on_event(self, e: keyboard.KeyboardEvent):
+        print(f'button {e.name} pressed')
+        if e.name == 'm':
+            self.set_state(AppState.WAITING_INPUT)
+            self.change_auto_man()
+        elif e.name.isdigit():
+            print('Set Manual Program ' + e.name)
+            self.set_program(int(e.name))
+        elif e.name == 't':
+            self.trigger_after_pose()
+        elif e.name == 's':
+            print('Saving Screen Shot...')
+            self.camera.save_screenshot(str(self.program))
+        elif e.name == 'n':
+            print('New Flag')
+            self.flag_new_product = True
+        elif e.name == 'z':
+            print('Classifing Image...')
+            self.classify()

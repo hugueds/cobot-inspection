@@ -6,14 +6,14 @@ from classes import Controller, Camera
 c = Controller()
 
 c.load_parameters()
-c.start_camera()
+# c.start_camera()
 
-s = 0
+# s = 0
 
-sleep(1)
+# sleep(1)
 
-c.process_images()
-c.generate_report()
+# # c.process_images()
+# # c.generate_report()
 
 while True:
     print('Main Thread')

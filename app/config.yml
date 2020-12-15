@@ -4,6 +4,8 @@ app:
   release_date: undefined
   author: 'SSBHPE'
 debug: True
+controller:
+  debug_model: True  
 camera:
   src: 0
   resolution: '640x480'
