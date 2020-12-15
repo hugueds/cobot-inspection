@@ -206,7 +206,7 @@ class Controller:
 
 
     def on_event(self, e: keyboard.KeyboardEvent):
-        print(f'button {e.name} pressed')
+        print(f'[EVENT] Key: {e.name} was pressed')
         if e.name == 'm':
             self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()
