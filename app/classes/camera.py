@@ -24,6 +24,7 @@ class Camera:
     stopped = False
     frame_counter = 0
     info_opened = False
+    webcam: WebcamVideoStream
 
     def __init__(self, config_path='config.yml'):        
         with open(config_path, 'r') as file:
@@ -33,29 +34,35 @@ class Camera:
         self.src = int(config['camera']['src'])
         self.debug = config['camera']['debug']
         if not self.debug:
-            self.stream = WebcamVideoStream(self.src, 'WebCam').start()
-
+            self.webcam = WebcamVideoStream(self.src, 'WebCam')
+            self.webcam.start()
 
     def config_camera(self, config='config.yml'):
         self.brightness = 0
         self.sharpness = 0
         self.hue = 0
         self.contrast = 0        
+        
 
     def start(self):
-        self.thread = Thread(target=self.update, args=(), daemon=True)
+        self.thread = Thread(target=self.update, daemon=True)
         self.thread.start()
 
     def update(self):
         try:        
             self.frame_counter = 0
+            sleep(1)
 
-            while not self.stream.stopped:
+            cv.namedWindow('main', cv.WINDOW_NORMAL)
+            cv.resizeWindow('main', 900, 720)
+
+            while  not self.stopped:
                 cut_frame = self.frame
                 if not self.debug:
-                    frame = self.stream.read()
-                    cut_frame = frame
-                    # cut_frame = frame[:, 70:-70] if use the teablemachine models
+                    frame = self.webcam.read()                    
+                    # cut_frame = frame
+                    cut_frame = frame[10:-10, 70:-70] # if use the teablemachine models# 
+                    # cut_frame = cv.cvtColor(cut_frame, cv.COLOR_RGB2BGR)
 
                 self.frame = cut_frame
                 flipped = cv.flip(cut_frame, 0)
@@ -68,16 +75,16 @@ class Camera:
 
         except Exception as e:
             print(e)
-            self.stream.stop()
+            self.webcam.stop()
             sleep(5)
             print('Trying to reopen the camera')            
-            self.stream = WebcamVideoStream(self.src, 'WebCam').start()
+            self.webcam = WebcamVideoStream(self.src, 'WebCam').start()
             self.start()
 
         cv.destroyAllWindows()
 
     def pause(self):
-        self.stream.stop()
+        self.webcam.stop()
         cv.destroyAllWindows()
 
     def read(self):
@@ -110,7 +117,6 @@ class Camera:
         text = f"LABEL: {prediction.label}, ACCURACY: {round( (prediction.confidence * 100), 2)}%"
         cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.70, yellow, 2)
         return edited_image
-        
         
     def save_result(self, image: np.ndarray, save_path, file):
         path = f'results/{save_path}/{file}'

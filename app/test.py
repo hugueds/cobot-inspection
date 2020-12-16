@@ -6,7 +6,7 @@ from classes import Controller, Camera
 c = Controller()
 
 c.load_parameters()
-# c.start_camera()
+c.start_camera()
 
 # s = 0
 

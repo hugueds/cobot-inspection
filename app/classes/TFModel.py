@@ -28,12 +28,16 @@ class TFModel:
     def predict(self, image:np.ndarray) -> Prediction:
         global models
 
-        size = 127
-        channels = 1
+        size = 224
+        channels = 3
+
         if channels == 1:
-            image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+            image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        else:
+            image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
             
         image = cv.resize(image, (size, size), cv.INTER_AREA)
+        # image = (image / 127.0) - 1
         image = (image / 127.0) - 1
         image = image.reshape(1, size, size, channels)
 

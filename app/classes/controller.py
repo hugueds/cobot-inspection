@@ -16,7 +16,7 @@ import keyboard
 
 with open('config.yml') as f:
     config = yaml.safe_load(f)
-    debug = config['debug']
+    debug = config['controller']['debug_model']
 
 # debug = False
 # debug = True
@@ -39,13 +39,12 @@ class Controller:
     program = 0
     program_index = 0
     start_datetime = datetime.now()
-    job_datetime = datetime.now()
-    final_datetime = start_datetime
+    job_datetime = datetime.now()    
     pose_times = []
     component_unit = '0000'
     parameters_found = False
     manual_mode = False
-    popid = '999999'
+    popid = ''
     model_name = '0000'
     parameter = ''
     flag_new_product = False
@@ -71,14 +70,13 @@ class Controller:
         self.thread_camera = Thread(target=self.update_camera_interface, args=(), daemon=True)
         self.thread_camera.start()
 
-    def new_product(self):
+    def new_product(self):        
         self.job_datetime = datetime.now()
         self.operation_result = 0
         self.program_index = 0
         self.parameter_list = []
         self.program_list = []
-        self.pose_times = []
-        self.popid = '999999'
+        self.pose_times = []        
         self.parameters_found = False
         self.total_programs = 0
 
@@ -96,7 +94,7 @@ class Controller:
         self.program_index += 1
 
     def trigger_after_pose(self):
-        self.cobot.set_trigger(2)
+        self.cobot.set_trigger(trigger_afterpose)
 
     def set_program(self, program):
         self.program = program
@@ -184,7 +182,7 @@ class Controller:
         self.manual_mode = not self.manual_mode
         if self.manual_mode:
             print('Set to manual')
-            self.state == AppState.WAITING_INPUT
+            self.set_state(AppState.WAITING_INPUT)            
         else:
             print('Set to automatic')
 
@@ -203,7 +201,6 @@ class Controller:
             else:
                 self.results.append(False)
             i += 1
-
 
     def on_event(self, e: keyboard.KeyboardEvent):
         print(f'[EVENT] Key: {e.name} was pressed')
