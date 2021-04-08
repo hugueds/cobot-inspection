@@ -1,9 +1,0 @@
-ligar o programa com robo nao iniciado
-ligar o robo em emergencia
-
-parar o programa
-voltar o programa apos parar
-
-puxar o cabo de rede
-
-

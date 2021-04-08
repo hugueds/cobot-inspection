@@ -1,59 +1,41 @@
+import argparse
 from datetime import datetime
 from time import sleep
 from logger import logger
-from classes import Controller, controller
-from enumerables import PositionStatus, AppState, CobotStatus
-from models.result import Result
+from classes import Controller
+from enumerables import PositionStatus, AppState
 
-debug = True
+parser = argparse.ArgumentParser()
+parser.add_argument('--debug', default=False, action='store_true')
+args = parser.parse_args()
 
-controller = Controller()
+debug = args.debug
 
-controller.connect_to_cobot()
-controller.start_camera()
+controller = Controller(debug)
 
-sleep(2)
-
-# check if robot is on running State
-while controller.cobot.status != CobotStatus.RUNNING:
-    logger.warning(f"Cobot is not ready for work... Status: {controller.cobot.status}")
-    sleep(5)
-
-if not debug:
-    while not controller.cobot.position_status == PositionStatus.HOME:
-        print("Waiting Cobot reach the Home position")
-        logger.info("Waiting Cobot reach in Home position")
-        sleep(5)
-
-controller.set_state(AppState.WAITING_INPUT)
-print('Waiting for an Input...')
-
-while True:  # Put another condition
-
-    # read a break condition / keyboard
-    if controller.cobot.status != CobotStatus.RUNNING:
-        logger.warning(f"Cobot is not ready for work... Status: {controller.cobot.status}")
-        sleep(1)
+while True:       
+    
+    if not controller.check_cobot_status():
         continue
 
-    if controller.cobot.emergency == CobotStatus.EMERGENCY_STOPPED:
-        logger.warning(f"Cobot is under Emergency Stop... Status: {controller.cobot.status}")
-        sleep(5)
-        continue
+    if controller.state == AppState.INITIAL:
+        print('Starting Program')
+        controller.connect_to_cobot()
+        controller.start_camera()        
+        controller.set_state(AppState.WAITING_INPUT)
+        print('Waiting for an Input...')
+        sleep(1)        
 
     if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
         continue        
 
     if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:            
-        # print("Waiting a new Input...")
-        if controller.flag_new_product:
-            controller.flag_new_product = False
-            logger.info(f'New Popid in Station: {controller.popid}')            
+        # print("Waiting a new Input...")        
+        if controller.flag_new_product:            
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
 
     elif controller.state == AppState.LOADING_PARAMETERS:
-        logger.info(f"Collecting parameters for POPID {controller.popid}")
         controller.load_parameters()
         if controller.parameters_found:
             logger.info(f'Parameters for CU: {controller.component_unit} loaded')
@@ -64,24 +46,21 @@ while True:  # Put another condition
 
     elif controller.state == AppState.PARAMETER_LOADED:
         controller.clear_folder()
-        controller.set_waiting_program()
-        sleep(1)
+        controller.set_waiting_program()        
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_WAITING:
         print("Moving to Waiting...")
-        if controller.cobot.position_status == PositionStatus.WAITING:
+        if controller.get_position_status() == PositionStatus.WAITING:
             if controller.program_index < controller.total_programs:
-                controller.next_pose()
-                logger.info(f'Moving to POSE: {controller.program_index}/{controller.total_programs}')
-                logger.info(f'Running Program: {controller.program}')
+                controller.next_pose()                
                 controller.set_state(AppState.MOVING_TO_POSE)
             else:
                 controller.set_state(AppState.PROCESSING_IMAGES)
 
     elif controller.state == AppState.MOVING_TO_POSE:
         print("Moving to Pose...")
-        if controller.cobot.position_status == PositionStatus.POSE:
+        if controller.get_position_status() == PositionStatus.POSE:
             controller.set_state(AppState.COLLECTING_IMAGE)
 
     elif controller.state == AppState.COLLECTING_IMAGE:
@@ -107,7 +86,7 @@ while True:  # Put another condition
         logger.info(f"Total operation time: {total_time}")
         controller.set_state(AppState.WAITING_INPUT)
 
-    sleep(0.25)
+    sleep(0.2)
 
 
 # def main():

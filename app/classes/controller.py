@@ -1,3 +1,5 @@
+from enumerables import cobot_status
+from enumerables.cobot_status import CobotStatus
 import os
 import json
 import yaml
@@ -13,6 +15,7 @@ from classes.cobot import Cobot
 from classes.camera import Camera
 from models import CameraInfo, Prediction
 import keyboard
+from logger import logger
 
 with open('config.yml') as f:
     config = yaml.safe_load(f)
@@ -41,10 +44,11 @@ class Controller:
     start_datetime = datetime.now()
     job_datetime = datetime.now()    
     pose_times = []
-    component_unit = '0000'
     parameters_found = False
     manual_mode = False
+    auto_mode = False
     popid = ''
+    component_unit = '0000'
     model_name = '0000'
     parameter = ''
     flag_new_product = False
@@ -52,11 +56,12 @@ class Controller:
     predictions: List[Prediction] = []
     results = []
 
-    def __init__(self, cobot: Cobot = None, camera: Camera = None) -> None:
+    def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:
         self.cobot = cobot if cobot else Cobot()
         self.camera = camera if camera else Camera()
         self.display_info()
         keyboard.on_press(self.on_event)
+        self.debug = debug
 
     def connect_to_cobot(self):
         self.cobot.connect()
@@ -70,7 +75,8 @@ class Controller:
         self.thread_camera = Thread(target=self.update_camera_interface, args=(), daemon=True)
         self.thread_camera.start()
 
-    def new_product(self):        
+    def new_product(self):
+        self.flag_new_product = False
         self.job_datetime = datetime.now()
         self.operation_result = 0
         self.program_index = 0
@@ -79,8 +85,10 @@ class Controller:
         self.pose_times = []        
         self.parameters_found = False
         self.total_programs = 0
+        logger.info(f'New Popid in Station: {self.popid}')
 
     def load_parameters(self):  # Fazer download do SQL
+        logger.info(f"Collecting parameters for POPID {self.popid}")
         self.parameter_list = self.get_parameter_list()        
         self.program_list = [int(x[5:7]) for x in self.parameter_list]
         self.total_programs = len(self.program_list)
@@ -92,6 +100,8 @@ class Controller:
         self.parameter = self.parameter_list[self.program_index]
         self.set_program(self.program)
         self.program_index += 1
+        logger.info(f'Moving to POSE: {self.program_index}/{self.total_programs}')
+        logger.info(f'Running Program: {self.program}')
 
     def trigger_after_pose(self):
         self.cobot.set_trigger(trigger_afterpose)
@@ -103,6 +113,7 @@ class Controller:
     def set_waiting_program(self):
         self.program = waiting_program
         self.cobot.set_program(waiting_program)
+        sleep(0.2)
 
     def set_state(self, state: AppState):
         self.state = state
@@ -166,7 +177,7 @@ class Controller:
         filename = f'{self.program_index}_{parameter}'
         self.camera.save_image(filename)
 
-    def get_parameter_list(self, index=0):  # Simulate parameters        
+    def get_parameter_list(self, index=0, debug=False):  # Simulate parameters        
         with open('./data/mock_request.json') as f:
             file = json.load(f)
         self.popid = file['data'][index]['popid'] # Only in tests
@@ -221,3 +232,21 @@ class Controller:
         elif e.name == 'z':
             print('Classifing Image...')
             self.classify()
+
+
+    def get_cobot_status(self):
+        return self.cobot.status
+
+    def get_position_status(self):
+        return self.cobot.position_status
+
+    def check_cobot_status(self):         
+        error = False
+        if cobot_status == CobotStatus.EMERGENCY_STOPPED:
+            logger.warning(f"Cobot is under Emergency Stop... Status: {self.cobot.status}")            
+            error = True
+        elif cobot_status != CobotStatus.RUNNING:
+            logger.warning(f"Cobot is not ready for work... Status: {self.cobot.status}")
+            error = True
+        sleep(2)
+        return error

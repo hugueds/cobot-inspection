@@ -6,7 +6,7 @@ from datetime import datetime
 import cv2 as cv
 import numpy as np
 from imutils.video.webcamvideostream import WebcamVideoStream
-from models import Prediction, prediction
+from models import Prediction
 
 red = (0,0,255)
 green = (0, 255, 0)
@@ -42,7 +42,6 @@ class Camera:
         self.sharpness = 0
         self.hue = 0
         self.contrast = 0        
-        
 
     def start(self):
         self.thread = Thread(target=self.update, daemon=True)
@@ -61,7 +60,7 @@ class Camera:
                 if not self.debug:
                     frame = self.webcam.read()                    
                     # cut_frame = frame
-                    cut_frame = frame[10:-10, 70:-70] # if use the teablemachine models# 
+                    cut_frame = frame[10:-10, 70:-70] # if use the teachablemachine models
                     # cut_frame = cv.cvtColor(cut_frame, cv.COLOR_RGB2BGR)
 
                 self.frame = cut_frame

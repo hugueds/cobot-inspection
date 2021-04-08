@@ -80,8 +80,7 @@ class Cobot:
     def update_interface(self, state: AppState):
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
         self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
-        self.__write_register(ModbusInterface.PROGRAM_STATE.value, state.value)
-        # self.__write_register(ModbusInterface.POSITION_STATUS.value, state.value)
+        self.__write_register(ModbusInterface.PROGRAM_STATE.value, state.value)        
         
     def next_pose(self):
         # write_register

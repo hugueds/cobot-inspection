@@ -1,15 +1,14 @@
 from enum import Enum
 
+# 128-255 - General purpose 16 bit registers
+# 258 - 
+# 261 - isSecurityStopped (coil)
+# 262 - isEmergencyStopped (coil)
 
-class ModbusInterface(Enum):
+# C = Cobot
+# A = Application
 
-    # 128-255 - General purpose 16 bit registers
-    # 258 - 
-    # 261 - isSecurityStopped (coil)
-    # 262 - isEmergencyStopped (coil)
-    
-    # C = Cobot
-    # A = Application
+class ModbusInterface(Enum):    
 
     START_BYTE = 128
     LIFE_BEAT = 129  # A -> INCREASED BY 1

@@ -36,8 +36,7 @@ class TFModel:
         else:
             image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
             
-        image = cv.resize(image, (size, size), cv.INTER_AREA)
-        # image = (image / 127.0) - 1
+        image = cv.resize(image, (size, size), cv.INTER_AREA)        
         image = (image / 127.0) - 1
         image = image.reshape(1, size, size, channels)
 

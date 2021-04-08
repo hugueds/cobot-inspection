@@ -5,4 +5,9 @@ class PLC:
         self.rack = rack
         self.slot = slot
 
+    def connect(self):
+        pass
+
+    def disconnect(self):
+        pass
     
