@@ -1,18 +1,11 @@
 from time import sleep
-from models.camera_info import CameraInfo
 import yaml
 from threading import Thread
 from datetime import datetime
 import cv2 as cv
 import numpy as np
 from imutils.video.webcamvideostream import WebcamVideoStream
-from models import Prediction
-
-red = (0,0,255)
-green = (0, 255, 0)
-yellow = (0,200,200)
-white = (255,255,255)
-cyan = (255,255,0)
+from models import Prediction, Color, CameraInfo
 
 font = cv.FONT_HERSHEY_SIMPLEX
 class Camera:
@@ -129,17 +122,17 @@ class Camera:
         s = 10
         p = 20
         o = 25
-        cv.putText(info_frame, 'POPID: ' + info.popid, (s, p+0*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'CU: ' + info.cu, (s, p+2*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, white, 2)
-        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, white, 2)        
-        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, white, 2)
-        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, white, 2)
-        cv.putText(info_frame, "LAST RESULTS: ", (s, p + 11*o ), font, 0.5, cyan, 2)
+        cv.putText(info_frame, 'POPID: ' + info.popid, (s, p+0*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'CU: ' + info.cu, (s, p+2*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, Color.white, 2)        
+        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, "LAST RESULTS: ", (s, p + 11*o ), font, 0.5, Color.CYAN, 2)
         
         if len(info.predictions) and len(info.results) and len(info.results) == len(info.predictions):
             for i in range(len(info.parameters)):                
