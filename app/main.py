@@ -15,11 +15,11 @@ controller = Controller(debug)
 
 while True:       
     
-    if not controller.check_cobot_status():
+    if not controller.check_cobot_status():        
         continue
 
     if controller.state == AppState.INITIAL:
-        logger.log('Starting Program')
+        logger.log('Starting Program...')
         controller.connect_to_cobot()
         controller.start_camera()        
         controller.set_state(AppState.WAITING_INPUT)

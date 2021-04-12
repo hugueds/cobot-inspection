@@ -34,10 +34,10 @@ class Cobot:
 
     def connect(self):
         try:
-            print(f'Robot {self.ip} trying to connect')  # Replace with log
+            logger.info(f'Robot {self.ip} trying to connect')  # Replace with log
             self.modbus_client = ModbusTcpClient(self.ip, self.port)
         except Exception as e:
-            return print('Cobot::connect::', str(e))
+            return logger.error(e)
 
     def disconnect(self):
         self.modbus_client.close()    
@@ -103,4 +103,4 @@ class Cobot:
             self.read_interface()
             sleep(1)
         else:
-            print('Disconnected')
+            logger.error('Modbus Interface Disconnected')

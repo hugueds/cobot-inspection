@@ -1,3 +1,4 @@
+from models.job import Job
 from enumerables import cobot_status
 from enumerables import CobotStatus, OperationResult
 import os
@@ -44,9 +45,9 @@ class Controller:
     manual_mode = False
     auto_mode = False
     popid = ''
-    component_unit = '0000'
-    model_name = '0000'
-    parameter = ''
+    job: Job
+    model_name = '0000' # TODO use a job class
+    parameter = '' 
     flag_new_product = False
 
     predictions: List[Prediction] = []
@@ -72,6 +73,7 @@ class Controller:
         self.thread_camera.start()
 
     def new_product(self):
+        self.job = Job()
         self.flag_new_product = False
         self.job_datetime = datetime.now()
         self.operation_result = 0
@@ -116,13 +118,13 @@ class Controller:
         self.state = state
 
     def update_cobot_interface(self):
-        logger.info('Starting Cobot Update Interface')
+        logger.info('Starting Cobot Data Update...')
         while self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
             self.cobot.update_interface(self.state)
-            sleep(0.2)
+            sleep(0.2) # TODO Get via config
         else:
-            logger.info('Update Cobot Interface has stopped')
+            logger.error('Cobot Data Update has stopped')
 
     def update_camera_interface(self):
         logger.info('Starting Camera Update Interface')
@@ -181,7 +183,7 @@ class Controller:
         return file['data'][index]['lts']
 
     def classify(self):
-        model = TFModel(self.model_name)
+        model = TFModel(job.model_name)
         image = self.camera.frame.copy()
         prediction = model.predict(image)
         print(f'{prediction.label}, {prediction.confidence}')
@@ -244,5 +246,5 @@ class Controller:
         elif cobot_status != CobotStatus.RUNNING:
             logger.warning(f"Cobot is not ready for work... Status: {self.cobot.status}")
             error = True
-        sleep(2)
+        sleep(1)
         return error

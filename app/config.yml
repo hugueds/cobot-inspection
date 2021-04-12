@@ -24,6 +24,7 @@ cobot:
   ip: '10.8.66.212'
   tcp_port: 0
   modbus_port: 502
+  update_time: 0.2
 models:
   path: 'keras_models'  
   size: 224
