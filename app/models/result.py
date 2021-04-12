@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from datetime import datetime
 
-class Result():
-    approved = False
-    label = 'not_defined'
-    confidence = 0.0
-    date_time = datetime.now()
+@dataclass
+class Result:
+    approved: bool  = False
+    label: str = 'not_defined'
+    confidence: float = 0.0
+    date_time: datetime = datetime.now()

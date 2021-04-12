@@ -1,5 +1,4 @@
 from enum import Enum
-
 class CobotStatus(Enum):
     DISCONNECTED = 0
     CONFIRM_SAFETY = 1

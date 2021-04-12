@@ -12,7 +12,7 @@ np.set_printoptions(suppress=True)
 
 models = {}
 
-class TFModel: 
+class TFModel:
     
     def __init__(self, name):       
         try:            
@@ -55,7 +55,7 @@ class TFModel:
         image_array = np.asarray(image)
         normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
         data[0] = normalized_image_array
-        pass
+        
 
     def load_single_model(self):
         global models

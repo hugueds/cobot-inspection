@@ -1,5 +1,5 @@
 from enumerables import cobot_status
-from enumerables.cobot_status import CobotStatus
+from enumerables import CobotStatus, OperationResult
 import os
 import json
 import yaml
@@ -21,9 +21,6 @@ with open('config.yml') as f:
     config = yaml.safe_load(f)
     debug = config['controller']['debug_model']
 
-# debug = False
-# debug = True
-
 if not debug:
     from classes.TFModel import TFModel
 
@@ -31,11 +28,10 @@ waiting_program = 0
 home_program = 99
 trigger_afterpose = 2
 
-
 class Controller:
 
     state: AppState = AppState.INITIAL
-    operation_result = 0  # 0 -> None, 1 -> OK, 2 -> NOT_OK
+    operation_result: OperationResult = OperationResult.NONE
     total_programs = 0
     program_list = []
     parameter_list = []
@@ -88,6 +84,7 @@ class Controller:
         logger.info(f'New Popid in Station: {self.popid}')
 
     def load_parameters(self):  # Fazer download do SQL
+        # TODO Flag de loading para nao rodar duas vezes as consultas
         logger.info(f"Collecting parameters for POPID {self.popid}")
         self.parameter_list = self.get_parameter_list()        
         self.program_list = [int(x[5:7]) for x in self.parameter_list]
@@ -119,16 +116,16 @@ class Controller:
         self.state = state
 
     def update_cobot_interface(self):
-        print('Starting Cobot Update Interface')
+        logger.info('Starting Cobot Update Interface')
         while self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
             self.cobot.update_interface(self.state)
             sleep(0.2)
         else:
-            print('Update Cobot Interface has stopped')
+            logger.info('Update Cobot Interface has stopped')
 
     def update_camera_interface(self):
-        print('Starting Camera Update Interface')
+        logger.info('Starting Camera Update Interface')
         info = CameraInfo()
         while True:
             info.state = self.state.name
@@ -162,7 +159,7 @@ class Controller:
             if image_file.split('.')[-1] in ['png', 'jpg']:
                 image = cv.imread(f'{folder}/{image_file}')
                 prediction = model.predict(image)
-                print(prediction.label, prediction.confidence)
+                logger.info(prediction.label, prediction.confidence)
                 self.predictions.append(prediction)
                 # edited_image = self.camera.create_subtitle(image, prediction)
                 edited_image = image
@@ -185,26 +182,26 @@ class Controller:
 
     def classify(self):
         model = TFModel(self.model_name)
-        image = self.camera.frame
+        image = self.camera.frame.copy()
         prediction = model.predict(image)
         print(f'{prediction.label}, {prediction.confidence}')
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode
         if self.manual_mode:
-            print('Set to manual')
+            logger.info('Set to manual')
             self.set_state(AppState.WAITING_INPUT)            
         else:
-            print('Set to automatic')
+            logger.info('Set to automatic')
 
     def generate_report(self):
-        print('Generating Results...')
+        logger.info('Generating Results...')
         self.results = []
         i = 0
         for p in self.parameter_list:
             prediction_label = self.predictions[i].label.split('_')[0]
-            print('Parameter: ', p)
-            print('Predicted: ', prediction_label)
+            logger.info('Parameter: ', p)
+            logger.info('Predicted: ', prediction_label)
             if p[4:] == prediction_label:
                 self.results.append(True)
             elif prediction_label == 'NOK':
@@ -214,25 +211,24 @@ class Controller:
             i += 1
 
     def on_event(self, e: keyboard.KeyboardEvent):
-        print(f'[EVENT] Key: {e.name} was pressed')
+        logger.info(f'[EVENT] Key: {e.name} was pressed')
         if e.name == 'm':
             self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()
         elif e.name.isdigit():
-            print('Set Manual Program ' + e.name)
+            logger.info('Set Manual Program ' + e.name)
             self.set_program(int(e.name))
         elif e.name == 't':
             self.trigger_after_pose()
         elif e.name == 's':
-            print('Saving Screen Shot...')
+            logger.info('Saving Screen Shot...')
             self.camera.save_screenshot(str(self.program))
         elif e.name == 'n':
-            print('New Flag')
+            logger.info('New Flag')
             self.flag_new_product = True
         elif e.name == 'z':
-            print('Classifing Image...')
+            logger.info('Classifing Image...')
             self.classify()
-
 
     def get_cobot_status(self):
         return self.cobot.status

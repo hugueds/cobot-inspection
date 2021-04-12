@@ -1,10 +1,14 @@
-class Inspection: 
+from typing import List
+from dataclasses import dataclass
+from .pose import Pose
 
-    cobot_pose = [] # array of poses
-    pose_order = 0
-    popid = ''
-    component_unit = None
-    image_model = None
+@dataclass
+class Inspection: 
+    cobot_pose: List[Pose]
+    pose_order: int
+    popid: str
+    component_unit: str
+    image_model: str
 
 
 

@@ -19,18 +19,17 @@ while True:
         continue
 
     if controller.state == AppState.INITIAL:
-        print('Starting Program')
+        logger.log('Starting Program')
         controller.connect_to_cobot()
         controller.start_camera()        
         controller.set_state(AppState.WAITING_INPUT)
-        print('Waiting for an Input...')
+        logger.log('Waiting for an Input...')
         sleep(1)        
 
     if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
         continue        
 
-    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:            
-        # print("Waiting a new Input...")        
+    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:
         if controller.flag_new_product:            
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
@@ -50,7 +49,7 @@ while True:
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_WAITING:
-        print("Moving to Waiting...")
+        logger.info("Moving to Waiting...")
         if controller.get_position_status() == PositionStatus.WAITING:
             if controller.program_index < controller.total_programs:
                 controller.next_pose()                
@@ -59,19 +58,18 @@ while True:
                 controller.set_state(AppState.PROCESSING_IMAGES)
 
     elif controller.state == AppState.MOVING_TO_POSE:
-        print("Moving to Pose...")
+        logger.info("Moving to Pose...")
         if controller.get_position_status() == PositionStatus.POSE:
             controller.set_state(AppState.COLLECTING_IMAGE)
 
-    elif controller.state == AppState.COLLECTING_IMAGE:
-        # print("Collecting Image")
+    elif controller.state == AppState.COLLECTING_IMAGE:        
         logger.info("Collecting and Saving Image")
         controller.save_image()
         controller.trigger_after_pose()
         controller.set_state(AppState.MOVING_TO_AFTER_POSE)
 
     elif controller.state == AppState.MOVING_TO_AFTER_POSE:
-        print("Moving to after pose...")
+        logger.info("Moving to after pose...")
         if controller.cobot.position_status == PositionStatus.AFTER_POSE:
             controller.pose_times.append(datetime.now())
             controller.set_waiting_program()
