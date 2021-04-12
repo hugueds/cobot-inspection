@@ -1,6 +1,6 @@
 class Pose:
     
-    def __init__(self, base, shoulder, elbow, wrist_1, wrist_2, wrist_3) -> None:
+    def __init__(self, base=0, shoulder=0, elbow, wrist_1, wrist_2, wrist_3) -> None:
         self.base = base
         self.shoulder = shoulder
         self.elbow = elbow

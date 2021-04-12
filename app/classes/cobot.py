@@ -9,12 +9,12 @@ from logger import logger
 class Cobot:
 
     life_beat = -1
-    status = 0
+    status = CobotStatus.NONE
     move_status = 0
-    selected_program = 0
-    running_program = 0
     modbus_client = None
     emergency = False
+    selected_program = 0
+    running_program = 0
 
     position_status = PositionStatus.NOT_DEFINED
 
