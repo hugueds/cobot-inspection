@@ -15,13 +15,19 @@ class Camera:
     src = 0
     frame = np.zeros((480,640), dtype=np.uint8)
     window_name = 'Main'
-    openned = False
+    cam_opened = False
     stopped = False
     frame_counter = 0
     info_opened = False
     webcam: WebcamVideoStream
 
-    def __init__(self, config_path='config.yml'):        
+    def __init__(self, config_path='config.yml'):
+        self.load_config(config_path)        
+        if not self.debug:
+            self.webcam = WebcamVideoStream(self.src, 'WebCam')
+            self.webcam.start()
+
+    def load_config(self, config_path='config.yml'):
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
         cam_config = config['camera']
@@ -31,15 +37,10 @@ class Camera:
         self.roi = cam_config['roi']
         self.debug = cam_config['debug']
         self.window_size = cam_config['window_size']
-        if not self.debug:
-            self.webcam = WebcamVideoStream(self.src, 'WebCam')
-            self.webcam.start()
-
-    def config_camera(self, config='config.yml'):
-        self.brightness = 0
-        self.sharpness = 0
-        self.hue = 0
-        self.contrast = 0        
+        self.brightness = cam_config['brightness']
+        self.contrast = cam_config['contrast']
+        self.saturation = cam_config['saturation']
+        self.sharpness = cam_config['sharpness']
 
     def start(self):
         self.thread = Thread(target=self.update, daemon=True)
@@ -119,7 +120,7 @@ class Camera:
         cv.imwrite(path, image)
 
     def display(self):
-        self.openned = not self.openned
+        self.cam_opened = not self.cam_opened
 
     def display_info(self, info: CameraInfo):        
         info_frame = np.zeros((720, 640, 3), dtype=np.uint8)        
