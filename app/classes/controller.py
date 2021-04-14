@@ -1,21 +1,17 @@
-from models.job import Job
-from enumerables import cobot_status
-from enumerables import CobotStatus, OperationResult
 import os
 import json
 import yaml
-from typing import List
+import keyboard
 import cv2 as cv
-from PIL import Image, ImageOps
+from typing import List
 from pathlib import Path
 from threading import Thread
 from datetime import datetime
 from time import sleep
 from enumerables import AppState
-from classes.cobot import Cobot
-from classes.camera import Camera
-from models import CameraInfo, Prediction
-import keyboard
+from classes import Camera, Cobot
+from models import CameraInfo, Prediction, Job
+from enumerables import CobotStatus, OperationResult
 from logger import logger
 
 with open('config.yml') as f:
@@ -25,30 +21,28 @@ with open('config.yml') as f:
 if not debug:
     from classes.TFModel import TFModel
 
-waiting_program = 0
-home_program = 99
-trigger_afterpose = 2
+PRG_WAITING = 0
+PRG_HOME = 99
+AFTERPOSE_TRIGGER = 2
 
 class Controller:
 
     state: AppState = AppState.INITIAL
     operation_result: OperationResult = OperationResult.NONE
-    total_programs = 0
+    job: Job    
+    total_programs:int = 0
     program_list = []
     parameter_list = []
     program = 0
     program_index = 0
     start_datetime = datetime.now()
-    job_datetime = datetime.now()    
     pose_times = []
     parameters_found = False
     manual_mode = False
-    auto_mode = False
-    popid = ''
-    job: Job
-    model_name = '0000' # TODO use a job class
-    parameter = '' 
+    auto_mode = False    
+    parameter: str = ''
     flag_new_product = False
+    
 
     predictions: List[Prediction] = []
     results = []
@@ -56,6 +50,7 @@ class Controller:
     def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:
         self.cobot = cobot if cobot else Cobot()
         self.camera = camera if camera else Camera()
+        self.tf_model = TFModel()
         self.display_info()
         keyboard.on_press(self.on_event)
         self.debug = debug
@@ -74,12 +69,9 @@ class Controller:
 
     def new_product(self):
         self.job = Job()
-        self.flag_new_product = False
-        self.job_datetime = datetime.now()
+        self.flag_new_product = False        
         self.operation_result = 0
-        self.program_index = 0
-        self.parameter_list = []
-        self.program_list = []
+        self.program_index = 0        
         self.pose_times = []        
         self.parameters_found = False
         self.total_programs = 0
@@ -88,30 +80,32 @@ class Controller:
     def load_parameters(self):  # Fazer download do SQL
         # TODO Flag de loading para nao rodar duas vezes as consultas
         logger.info(f"Collecting parameters for POPID {self.popid}")
-        self.parameter_list = self.get_parameter_list()        
-        self.program_list = [int(x[5:7]) for x in self.parameter_list]
+        self.job.parameter_list = self.get_parameter_list()        
+        self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
         self.total_programs = len(self.program_list)
         self.parameters_found = True
         self.parameter = self.parameter_list[0]
+        # Load Model
+        self.tf_model.load_single_model(self.job.component_unit)
 
     def next_pose(self):
-        self.program = self.program_list[self.program_index]
+        program = self.job.program_list[self.program_index]
+        self.set_program(program)
         self.parameter = self.parameter_list[self.program_index]
-        self.set_program(self.program)
         self.program_index += 1
         logger.info(f'Moving to POSE: {self.program_index}/{self.total_programs}')
         logger.info(f'Running Program: {self.program}')
 
     def trigger_after_pose(self):
-        self.cobot.set_trigger(trigger_afterpose)
+        self.cobot.set_trigger(AFTERPOSE_TRIGGER)
 
     def set_program(self, program):
         self.program = program
         self.cobot.set_program(program)
 
     def set_waiting_program(self):
-        self.program = waiting_program
-        self.cobot.set_program(waiting_program)
+        self.program = PRG_WAITING
+        self.cobot.set_program(PRG_WAITING)
         sleep(0.2)
 
     def set_state(self, state: AppState):
@@ -131,18 +125,18 @@ class Controller:
         info = CameraInfo()
         while True:
             info.state = self.state.name
-            info.cu = self.component_unit
-            info.popid = self.popid
+            info.cu = self.job.component_unit
+            info.popid = self.job.popid
             info.parameter = self.parameter
             info.program = str(self.program)
             info.program_index = str(self.program_index)
             info.total_programs = str(self.total_programs)
             info.life_beat_cobot = str(self.cobot.life_beat)
             info.manual = str(self.manual_mode)
-            info.jobtime = str((datetime.now() - self.job_datetime).seconds)
-            info.uptime = str((datetime.now() - self.start_datetime).seconds)
-            info.message = '[INFO] Message Test'
-            info.parameters = self.parameter_list
+            info.jobtime = str( (datetime.now() - self.job.start_time).seconds)
+            info.uptime = str( (datetime.now() - self.start_datetime).seconds)
+            info.message = '[INFO] Message Test' # Create a class with all kind of images
+            info.parameters = self.job.parameter_list
             info.predictions = self.predictions
             info.results = self.results
             self.camera.display_info(info)
@@ -153,7 +147,7 @@ class Controller:
         for f in files:
             os.remove(f'{folder}/{f}')
 
-    def process_images(self):
+    def process_images(self, before=False):
         self.predictions = []
         model = TFModel(self.model_name)
         folder = self.camera.image_folder
@@ -164,7 +158,7 @@ class Controller:
                 logger.info(prediction.label, prediction.confidence)
                 self.predictions.append(prediction)
                 # edited_image = self.camera.create_subtitle(image, prediction)
-                edited_image = image
+                edited_image = image.copy()
                 path = f'results/{self.popid}/{self.component_unit}/'
                 Path(path).mkdir(parents=True, exist_ok=True)
                 path = f'{path}/{image_file}'
@@ -172,7 +166,7 @@ class Controller:
 
     def save_image(self):
         sleep(0.2)
-        parameter = self.parameter_list[self.program_index - 1]
+        parameter = self.job.parameter_list[self.program_index - 1]
         filename = f'{self.program_index}_{parameter}'
         self.camera.save_image(filename)
 
@@ -183,10 +177,10 @@ class Controller:
         return file['data'][index]['lts']
 
     def classify(self):
-        model = TFModel(job.model_name)
+        model = TFModel(self.model_name)
         image = self.camera.frame.copy()
         prediction = model.predict(image)
-        print(f'{prediction.label}, {prediction.confidence}')
+        logger.info(f'{prediction.label}, {prediction.confidence}')
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode
@@ -223,7 +217,7 @@ class Controller:
         elif e.name == 't':
             self.trigger_after_pose()
         elif e.name == 's':
-            logger.info('Saving Screen Shot...')
+            logger.info('Saving ScreenShot...')
             self.camera.save_screenshot(str(self.program))
         elif e.name == 'n':
             logger.info('New Flag')
@@ -240,10 +234,10 @@ class Controller:
 
     def check_cobot_status(self):         
         error = False
-        if cobot_status == CobotStatus.EMERGENCY_STOPPED:
+        if self.cobot.status == CobotStatus.EMERGENCY_STOPPED:
             logger.warning(f"Cobot is under Emergency Stop... Status: {self.cobot.status}")            
-            error = True
-        elif cobot_status != CobotStatus.RUNNING:
+            error = True            
+        elif self.cobot.status != CobotStatus.RUNNING:
             logger.warning(f"Cobot is not ready for work... Status: {self.cobot.status}")
             error = True
         sleep(1)

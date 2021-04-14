@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 # 128-255 - General purpose 16 bit registers
 # 258 - 
@@ -8,7 +8,7 @@ from enum import Enum
 # C = Cobot
 # A = Application
 
-class ModbusInterface(Enum):    
+class ModbusInterface(IntEnum):    
 
     START_BYTE = 128
     LIFE_BEAT = 129  # A -> INCREASED BY 1
@@ -26,12 +26,12 @@ class ModbusInterface(Enum):
     POSITION_STATUS = 201 # C -> 0 - HOME, 1 - WAITING, 2 - POSE, 3 - MOVING, 4 - POSITION NOT FOUND
     MOVE_STATUS = 202  # C-> RUNNING, STOPPED, WAITING
     RUNNING_PROGRAM = 203  # C ->
-    POSE_1 = 204  # C -> HOW TO GET PROPERLY
-    POSE_2 = 205  # C -> HOW TO GET PROPERLY
-    POSE_3 = 206  # C -> HOW TO GET PROPERLY
-    POSE_4 = 207  # C -> HOW TO GET PROPERLY
-    POSE_5 = 208  # C -> HOW TO GET PROPERLY
-    POSE_6 = 209  # C -> HOW TO GET PROPERLY
+    POSE_BASE = 204  # C -> HOW TO GET PROPERLY
+    POSE_ELBOW = 205  # C -> HOW TO GET PROPERLY
+    POSE_SHOULDER = 206  # C -> HOW TO GET PROPERLY
+    POSE_WRIST_1 = 207  # C -> HOW TO GET PROPERLY
+    POSE_WRIST_2 = 208  # C -> HOW TO GET PROPERLY
+    POSE_WRIST_3 = 209  # C -> HOW TO GET PROPERLY
     POSE_SECONDS = 210  # C ->
     JOB_SECONDS = 211  # C ->
     SPEED = 212  # C ->

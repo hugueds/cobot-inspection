@@ -1,4 +1,5 @@
 from time import sleep
+from tensorflow.python.platform.tf_logging import log_every_n
 import yaml
 from threading import Thread
 from datetime import datetime
@@ -6,6 +7,7 @@ import cv2 as cv
 import numpy as np
 from imutils.video.webcamvideostream import WebcamVideoStream
 from models import Prediction, Color, CameraInfo
+from logger import logger
 
 font = cv.FONT_HERSHEY_SIMPLEX
 class Camera:
@@ -22,10 +24,13 @@ class Camera:
     def __init__(self, config_path='config.yml'):        
         with open(config_path, 'r') as file:
             config = yaml.safe_load(file)
-        self.image_folder = config['camera']['folder']
-        self.results_folder = config['camera']['results_folder']
-        self.src = int(config['camera']['src'])
-        self.debug = config['camera']['debug']
+        cam_config = config['camera']
+        self.image_folder = cam_config['folder']
+        self.results_folder = cam_config['results_folder']
+        self.src = int(cam_config['src'])
+        self.roi = cam_config['roi']
+        self.debug = cam_config['debug']
+        self.window_size = cam_config['window_size']
         if not self.debug:
             self.webcam = WebcamVideoStream(self.src, 'WebCam')
             self.webcam.start()
@@ -42,13 +47,12 @@ class Camera:
 
     def update(self):
         try:        
-            self.frame_counter = 0
-            sleep(1)
+            self.frame_counter = -1           
 
-            cv.namedWindow('main', cv.WINDOW_NORMAL)
-            cv.resizeWindow('main', 900, 720)
+            cv.namedWindow(self.window_name, cv.WINDOW_NORMAL)
+            cv.resizeWindow(self.window_name, self.window_size[0], self.window_size[1])
 
-            while  not self.stopped:
+            while not self.stopped:
                 cut_frame = self.frame
                 if not self.debug:
                     frame = self.webcam.read()                    
@@ -59,17 +63,17 @@ class Camera:
                 self.frame = cut_frame
                 flipped = cv.flip(cut_frame, 0)
                 flipped = cv.flip(flipped, 1)                
-                cv.imshow('main', flipped)
+                cv.imshow(self.window_name, flipped)
                 self.frame_counter += 1
 
                 if cv.waitKey(1) & 0xFF == ord('q'):
                     self.stopped = True
 
         except Exception as e:
-            print(e)
+            logger.error(e)
             self.webcam.stop()
             sleep(5)
-            print('Trying to reopen the camera')            
+            logger.info('Trying to reopen the camera')            
             self.webcam = WebcamVideoStream(self.src, 'WebCam').start()
             self.start()
 
@@ -99,7 +103,7 @@ class Camera:
         date_str = dt.strftime('%Y%m%d_%H%M%S')
         filename =  f'{date_str}_{filename}'
         path = f'screenshots/{filename}.jpg'
-        print('Saving File: ', filename)
+        logger.info('Saving File: ', filename)
         cv.imwrite(path, self.frame)  
 
     def create_subtitle(self, image: np.ndarray, prediction: Prediction):
@@ -136,7 +140,7 @@ class Camera:
         
         if len(info.predictions) and len(info.results) and len(info.results) == len(info.predictions):
             for i in range(len(info.parameters)):                
-                color = green if info.results[i] else red
+                color = Color.GREEN if info.results[i] else Color.RED
                 parameter = info.parameters[i]
                 prediction = info.predictions[i].label
                 cv.putText(info_frame, f"PARAMETER: {parameter}, RESULT: {prediction}", (s, p + (12+i)*o ), font, 0.6, color, 2)

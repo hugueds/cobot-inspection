@@ -12,9 +12,7 @@ np.set_printoptions(suppress=True)
 
 models = {}
 
-class TFModel:
-
-    model = None
+class TFModel:    
     
     def __init__(self, name):       
         try:            
@@ -23,12 +21,10 @@ class TFModel:
             self.name = name
             self.path = config['models']['path']
             self.size = config['models']['size']
-            self.channels = config['models']['channels']
-            logger.info('Loading Model ', name)
+            self.channels = config['models']['channels']            
             
         except Exception as e:            
             logger.error('TFModel::__init__::Invalid Model Configuration::'+str(e))
-
 
     def preprocess(self, image:np.ndarray, mode=255) -> np.ndarray: 
         if self.channels == 1:
@@ -65,13 +61,15 @@ class TFModel:
         normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
         data[0] = normalized_image_array
     
-    def load_single_model(self):
+    def load_single_model(self, name=''):
         global models
 
         filename = 'keras_model.h5'
 
         if self.name in models:
             return logger.info(f'Model {self.name} Loaded from Cache')
+        else:
+            logger.info('Loading Model ', self.name)
         
         labels = []
         label_file = open(f'{self.path}/{self.name}/labels.txt', 'r')
