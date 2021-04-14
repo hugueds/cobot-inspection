@@ -37,6 +37,7 @@ class Camera:
         self.roi = cam_config['roi']
         self.debug = cam_config['debug']
         self.window_size = cam_config['window_size']
+        self.full_screen = cam_config['full_screen']
         self.brightness = cam_config['brightness']
         self.contrast = cam_config['contrast']
         self.saturation = cam_config['saturation']

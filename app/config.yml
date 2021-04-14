@@ -12,6 +12,7 @@ camera:
   src: 0
   resolution: '640x480'
   window_size: [900,700]
+  full_screen: False
   roi: []
   fps: 15
   folder: 'temp'

@@ -68,8 +68,8 @@ class Controller:
         self.thread_camera.start()
 
     def new_product(self):
-        self.job = Job()
         self.flag_new_product = False        
+        self.job = Job()
         self.operation_result = 0
         self.program_index = 0        
         self.pose_times = []        

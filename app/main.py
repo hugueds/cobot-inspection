@@ -24,13 +24,13 @@ while True:
         controller.start_camera()        
         controller.set_state(AppState.WAITING_INPUT)
         logger.log('Waiting for an Input...')
-        sleep(1)        
+        sleep(1)
 
     if controller.manual_mode and controller.state == AppState.WAITING_INPUT:
         continue        
 
-    if not controller.manual_mode and controller.state == AppState.WAITING_INPUT:
-        if controller.flag_new_product:            
+    if controller.state == AppState.WAITING_INPUT:
+        if controller.flag_new_product: # Quem alterará esta Flag?
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
 
