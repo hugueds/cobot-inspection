@@ -69,12 +69,12 @@ class Controller:
 
     def new_product(self):
         self.flag_new_product = False        
-        self.job = Job()
         self.operation_result = 0
         self.program_index = 0        
         self.pose_times = []        
         self.parameters_found = False
         self.total_programs = 0
+        self.job = Job()
         logger.info(f'New Popid in Station: {self.popid}')
 
     def load_parameters(self):  # Fazer download do SQL
