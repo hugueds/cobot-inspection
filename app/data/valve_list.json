@@ -2,23 +2,28 @@
     "valves": [
         {
             "number": 1,
-            "component_unit": 7500
+            "component_unit": 7500,
+            "sequence": 0
         },
         {
             "number": 2,
-            "component_unit": 7817
+            "component_unit": 7817,
+            "sequence": 1
         },
         {
             "number": 3,
-            "component_unit": 8734
+            "component_unit": 8734,
+            "sequence": 2
         },
         {
             "number": 4,
-            "component_unit": 7506
+            "component_unit": 7506,
+            "sequence": 3
         },
         {
             "number": 5,
-            "component_unit": 9382
+            "component_unit": 9382,
+            "sequence": 4
         }
     ]    
 }

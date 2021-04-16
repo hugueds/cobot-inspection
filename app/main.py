@@ -30,6 +30,7 @@ while True:
         continue        
 
     if controller.state == AppState.WAITING_INPUT:
+        controller.wait_input()
         if controller.flag_new_product: # Quem alterará esta Flag?
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
@@ -88,10 +89,7 @@ while True:
 
 
 # def main():
-#     pass
-
-  
-
+#     pass 
 
 # if __name__ == "__main__":
 #     try:

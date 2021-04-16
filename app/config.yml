@@ -1,40 +1,38 @@
 app:
-  name: 'Cobot Inspection'
-  version: '0.1.0'
+  name: "Cobot Inspection"
+  version: "0.1.0"
   created_at: 2020-10-01
   last_updated: 2021-03-31
-  author: 'SSBHPE'
+  author: "SSBHPE"
 debug: False
 controller:
-  debug_model: False  
+  debug_model: False
   process_after_shot: False
 camera:
   src: 0
-  resolution: '640x480'
-  window_size: [900,700]
+  resolution: "640x480"
+  window_size: [900, 700]
   full_screen: False
   roi: []
   fps: 15
-  folder: 'temp'
-  results_folder: 'results'
-  debug: False  
-  config:
-    brightness: 0
-    contrast: 0
-    saturation: 0
-    sharpness: 0
+  folder: "temp"
+  results_folder: "results"
+  debug: False
+  brightness: 0
+  contrast: 0
+  saturation: 0
+  sharpness: 0
 cobot:
-  ip: '10.8.66.212'
+  ip: "10.8.66.212"
   tcp_port: 0
   modbus_port: 502
   update_time: 0.2
 models:
-  path: 'keras_models'  
+  path: "keras_models"
   size: 224
   channels: 3
 database:
-  name: 'cobot.db'
+  name: "cobot.db"
 log:
-  name: 'cobot_app'
-  path: 'logs'
-  
+  name: "cobot_app"
+  path: "logs"

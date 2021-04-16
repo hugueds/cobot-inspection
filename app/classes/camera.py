@@ -1,10 +1,9 @@
-from time import sleep
-from tensorflow.python.platform.tf_logging import log_every_n
 import yaml
-from threading import Thread
-from datetime import datetime
 import cv2 as cv
 import numpy as np
+from time import sleep
+from threading import Thread
+from datetime import datetime
 from imutils.video.webcamvideostream import WebcamVideoStream
 from models import Prediction, Color, CameraInfo
 from logger import logger

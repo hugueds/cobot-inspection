@@ -19,7 +19,7 @@ with open('config.yml') as f:
     debug = config['controller']['debug_model']
 
 if not debug:
-    from classes.TFModel import TFModel
+    from classes import TFPredictor 
 
 PRG_WAITING = 0
 PRG_HOME = 99
@@ -39,21 +39,19 @@ class Controller:
     pose_times = []
     parameters_found = False
     manual_mode = False
-    auto_mode = False    
+    auto_mode = True    
     parameter: str = ''
     flag_new_product = False
-    
-
     predictions: List[Prediction] = []
     results = []
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:
         self.cobot = cobot if cobot else Cobot()
         self.camera = camera if camera else Camera()
-        self.tf_model = TFModel()
+        self.tf_predictor = TFPredictor()
         self.display_info()
-        keyboard.on_press(self.on_event)
-        self.debug = debug
+        self.debug = debug        
+        keyboard.on_press(self.on_event) # Verificar se o Leitor pode vir aqui
 
     def connect_to_cobot(self):
         self.cobot.connect()
@@ -80,13 +78,13 @@ class Controller:
     def load_parameters(self):  # Fazer download do SQL
         # TODO Flag de loading para nao rodar duas vezes as consultas
         logger.info(f"Collecting parameters for POPID {self.popid}")
-        self.job.parameter_list = self.get_parameter_list()        
+        self.job.parameter_list = self.get_parameter_list(debug=True, index=0)
         self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
-        self.total_programs = len(self.program_list)
+        self.total_programs = len(self.job.program_list)
         self.parameters_found = True
-        self.parameter = self.parameter_list[0]
+        self.parameter = self.parameter_list[0]        
         # Load Model
-        self.tf_model.load_single_model(self.job.component_unit)
+        self.tf_predictor.load_single_model(self.job.component_unit)
 
     def next_pose(self):
         program = self.job.program_list[self.program_index]
@@ -123,7 +121,7 @@ class Controller:
     def update_camera_interface(self):
         logger.info('Starting Camera Update Interface')
         info = CameraInfo()
-        while True:
+        while True:            
             info.state = self.state.name
             info.cu = self.job.component_unit
             info.popid = self.job.popid
@@ -170,11 +168,12 @@ class Controller:
         filename = f'{self.program_index}_{parameter}'
         self.camera.save_image(filename)
 
-    def get_parameter_list(self, index=0, debug=False):  # Simulate parameters        
-        with open('./data/mock_request.json') as f:
-            file = json.load(f)
-        self.popid = file['data'][index]['popid'] # Only in tests
-        return file['data'][index]['lts']
+    def get_parameter_list(self, debug=False, index=0):  # Simulate parameters        
+        if debug:
+            with open('./data/mock_request.json') as f:
+                file = json.load(f)
+            self.popid = file['data'][index]['popid'] # Only in tests
+            return file['data'][index]['lts']
 
     def classify(self):
         model = TFModel(self.model_name)
@@ -184,11 +183,12 @@ class Controller:
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode
+        self.auto_mode = not self.auto_mode
         if self.manual_mode:
-            logger.info('Set to manual')
+            logger.info('Set to Cobot to Manual mode')
             self.set_state(AppState.WAITING_INPUT)            
         else:
-            logger.info('Set to automatic')
+            logger.info('Set Cobot to Automatic mode')
 
     def generate_report(self):
         logger.info('Generating Results...')
@@ -211,19 +211,19 @@ class Controller:
         if e.name == 'm':
             self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()
-        elif e.name.isdigit():
-            logger.info('Set Manual Program ' + e.name)
+        elif e.name.isdigit() and self.manual_mode:
+            logger.info('[Command] Set Manual Program ' + e.name)
             self.set_program(int(e.name))
         elif e.name == 't':
             self.trigger_after_pose()
         elif e.name == 's':
-            logger.info('Saving ScreenShot...')
+            logger.info('[Command] Saving ScreenShot...')
             self.camera.save_screenshot(str(self.program))
         elif e.name == 'n':
-            logger.info('New Flag')
+            logger.info('[Command] New Flag')
             self.flag_new_product = True
         elif e.name == 'z':
-            logger.info('Classifing Image...')
+            logger.info('[Command] Classifing Image...')
             self.classify()
 
     def get_cobot_status(self):
@@ -242,3 +242,6 @@ class Controller:
             error = True
         sleep(1)
         return error
+
+    def wait_input(self):                
+        self.flag_new_product = True

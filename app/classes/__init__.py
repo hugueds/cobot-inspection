@@ -1,4 +1,4 @@
-from .controller import *
-from .cobot import *
 from .camera import *
-from .TFModel import *
+from .cobot import *
+from .tf_predictor import *
+from .controller import *
