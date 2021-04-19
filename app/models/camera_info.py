@@ -14,8 +14,8 @@ class CameraInfo:
     total_programs: str = ''
     life_beat_cobot: int = 0
     manual: bool = False
-    jobtime: datetime = datetime.now()
-    uptime: datetime = datetime.now()
+    jobtime: str = ''
+    uptime: str = ''
     message: str = ''
     final_result: str = ''
     parameters =  ''

@@ -1,7 +1,5 @@
 from pymodbus.client.sync import ModbusTcpClient
 from enumerables import ModbusInterface
-
-
 class Modbus:   
     
     def __init__(self, ip, port=502, start_read=128, end_read=140, start_write=200): # TODO Read start and end from config

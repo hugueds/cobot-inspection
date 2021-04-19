@@ -14,8 +14,7 @@ class Camera:
     src = 0
     frame = np.zeros((480,640), dtype=np.uint8)
     window_name = 'Main'
-    cam_opened = False
-    stopped = False
+    cam_opened = False    
     frame_counter = 0
     info_opened = False
     webcam: WebcamVideoStream
@@ -41,19 +40,21 @@ class Camera:
         self.contrast = cam_config['contrast']
         self.saturation = cam_config['saturation']
         self.sharpness = cam_config['sharpness']
+        self.inverted = cam_config['inverted']
 
-    def start(self):
+    def start(self):        
         self.thread = Thread(target=self.update, daemon=True)
         self.thread.start()
 
     def update(self):
         try:        
             self.frame_counter = -1           
+            self.cam_opened = True
 
             cv.namedWindow(self.window_name, cv.WINDOW_NORMAL)
             cv.resizeWindow(self.window_name, self.window_size[0], self.window_size[1])
 
-            while not self.stopped:
+            while self.cam_opened:
                 cut_frame = self.frame
                 if not self.debug:
                     frame = self.webcam.read()                    
@@ -68,7 +69,7 @@ class Camera:
                 self.frame_counter += 1
 
                 if cv.waitKey(1) & 0xFF == ord('q'):
-                    self.stopped = True
+                    self.cam_opened = False
 
         except Exception as e:
             logger.error(e)
@@ -81,6 +82,7 @@ class Camera:
         cv.destroyAllWindows()
 
     def pause(self):
+        self.cam_opened = False
         self.webcam.stop()
         cv.destroyAllWindows()
 
@@ -112,7 +114,7 @@ class Camera:
         rows, _, _ = edited_image.shape
         edited_image[int(rows * 0.93):, :, :] = 0                
         text = f"LABEL: {prediction.label}, ACCURACY: {round( (prediction.confidence * 100), 2)}%"
-        cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.70, yellow, 2)
+        cv.putText(edited_image, text, (20, int(rows * 0.98)), font, 0.70, Color.YELLOW, 2)
         return edited_image
         
     def save_result(self, image: np.ndarray, save_path, file):
@@ -128,15 +130,15 @@ class Camera:
         p = 20
         o = 25
         cv.putText(info_frame, 'POPID: ' + info.popid, (s, p+0*o), font, 0.7, Color.WHITE, 2)
-        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, 'CU: ' + info.cu, (s, p+2*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, Color.white, 2)        
-        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, Color.white, 2)
-        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, Color.white, 2)
+        cv.putText(info_frame, 'STATE: ' + info.state, (s, p+1*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'CU: ' + info.component_unit, (s, p+2*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'PARAMETER: ' + info.parameter, (s, p+3*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'PROGRAM: ' + info.program, (s, p+4*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, f'POSE: {info.program_index} / {info.total_programs}' , (s, p+5*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+6*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'LIFE BEAT: ' + info.life_beat_cobot, (s, p+7*o), font, 0.7, Color.WHITE, 2)        
+        cv.putText(info_frame, 'JOB TIME: ' + info.jobtime, (s, p+8*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, 'UPTIME TIME: ' + info.uptime, (s, p+9*o), font, 0.7, Color.WHITE, 2)
         cv.putText(info_frame, "LAST RESULTS: ", (s, p + 11*o ), font, 0.5, Color.CYAN, 2)
         
         if len(info.predictions) and len(info.results) and len(info.results) == len(info.predictions):

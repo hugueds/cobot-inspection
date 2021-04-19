@@ -4,9 +4,9 @@ from typing import List
 
 @dataclass
 class Job:
-    popid: str
-    component_unit: str
-    size: int
-    model_name: str
-    parameter_list: List[str]
+    popid: str = ''
+    component_unit: str = ''
+    size: int = 0
+    model_name: str = ''
+    parameter_list = []
     start_time: datetime = datetime.now()

@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import yaml
 import keyboard
@@ -19,7 +20,7 @@ with open('config.yml') as f:
     debug = config['controller']['debug_model']
 
 if not debug:
-    from classes import TFPredictor 
+    from classes import TFPredictor
 
 PRG_WAITING = 0
 PRG_HOME = 99
@@ -29,8 +30,8 @@ class Controller:
 
     state: AppState = AppState.INITIAL
     operation_result: OperationResult = OperationResult.NONE
-    job: Job    
-    total_programs:int = 0
+    job: Job = None
+    total_programs: int = 0
     program_list = []
     parameter_list = []
     program = 0
@@ -39,37 +40,41 @@ class Controller:
     pose_times = []
     parameters_found = False
     manual_mode = False
-    auto_mode = True    
+    auto_mode = True
     parameter: str = ''
     flag_new_product = False
     predictions: List[Prediction] = []
     results = []
+    popid = ''
+    running = True
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:
         self.cobot = cobot if cobot else Cobot()
         self.camera = camera if camera else Camera()
         self.tf_predictor = TFPredictor()
         self.display_info()
-        self.debug = debug        
-        keyboard.on_press(self.on_event) # Verificar se o Leitor pode vir aqui
+        self.debug = debug
+        keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
 
     def connect_to_cobot(self):
         self.cobot.connect()
-        self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
+        self.thread_cobot = Thread(
+            target=self.update_cobot_interface, daemon=True)
         self.thread_cobot.start()
 
     def start_camera(self):
-        self.camera.start()        
+        self.camera.start()
 
     def display_info(self):
-        self.thread_camera = Thread(target=self.update_camera_interface, args=(), daemon=True)
+        self.thread_camera = Thread(
+            target=self.update_camera_interface, args=(), daemon=True)
         self.thread_camera.start()
 
     def new_product(self):
-        self.flag_new_product = False        
+        self.flag_new_product = False
         self.operation_result = 0
-        self.program_index = 0        
-        self.pose_times = []        
+        self.program_index = 0
+        self.pose_times = []
         self.parameters_found = False
         self.total_programs = 0
         self.job = Job()
@@ -82,7 +87,7 @@ class Controller:
         self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
         self.total_programs = len(self.job.program_list)
         self.parameters_found = True
-        self.parameter = self.parameter_list[0]        
+        self.parameter = self.parameter_list[0]
         # Load Model
         self.tf_predictor.load_single_model(self.job.component_unit)
 
@@ -91,7 +96,8 @@ class Controller:
         self.set_program(program)
         self.parameter = self.parameter_list[self.program_index]
         self.program_index += 1
-        logger.info(f'Moving to POSE: {self.program_index}/{self.total_programs}')
+        logger.info(
+            f'Moving to POSE: {self.program_index}/{self.total_programs}')
         logger.info(f'Running Program: {self.program}')
 
     def trigger_after_pose(self):
@@ -111,32 +117,41 @@ class Controller:
 
     def update_cobot_interface(self):
         logger.info('Starting Cobot Data Update...')
-        while self.cobot.modbus_client.is_socket_open:
+        while self.running and self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
             self.cobot.update_interface(self.state)
-            sleep(0.2) # TODO Get via config
+            sleep(0.2)  # TODO Get via config
         else:
             logger.error('Cobot Data Update has stopped')
 
     def update_camera_interface(self):
         logger.info('Starting Camera Update Interface')
         info = CameraInfo()
-        while True:            
+
+        while self.running:
             info.state = self.state.name
-            info.cu = self.job.component_unit
-            info.popid = self.job.popid
+
             info.parameter = self.parameter
             info.program = str(self.program)
             info.program_index = str(self.program_index)
             info.total_programs = str(self.total_programs)
             info.life_beat_cobot = str(self.cobot.life_beat)
             info.manual = str(self.manual_mode)
-            info.jobtime = str( (datetime.now() - self.job.start_time).seconds)
-            info.uptime = str( (datetime.now() - self.start_datetime).seconds)
-            info.message = '[INFO] Message Test' # Create a class with all kind of images
-            info.parameters = self.job.parameter_list
+
+            # Create a class with all kind of images
+            info.message = '[INFO] Message Test'
             info.predictions = self.predictions
             info.results = self.results
+
+            if self.job:
+                info.cu = self.job.component_unit
+                info.popid = self.job.popid
+                info.parameters = self.job.parameter_list
+                info.jobtime = str(
+                    (datetime.now() - self.job.start_time).seconds)
+                info.uptime = str(
+                    (datetime.now() - self.start_datetime).seconds)
+
             self.camera.display_info(info)
 
     def clear_folder(self):
@@ -145,14 +160,14 @@ class Controller:
         for f in files:
             os.remove(f'{folder}/{f}')
 
-    def process_images(self, before=False):
+    def process_images(self):
         self.predictions = []
-        model = TFModel(self.model_name)
+        self.tf_predictor.load_single_model(self.job.component_unit)
         folder = self.camera.image_folder
         for image_file in os.listdir(folder):
             if image_file.split('.')[-1] in ['png', 'jpg']:
                 image = cv.imread(f'{folder}/{image_file}')
-                prediction = model.predict(image)
+                prediction = self.tf_predictor.predict(image)
                 logger.info(prediction.label, prediction.confidence)
                 self.predictions.append(prediction)
                 # edited_image = self.camera.create_subtitle(image, prediction)
@@ -168,15 +183,15 @@ class Controller:
         filename = f'{self.program_index}_{parameter}'
         self.camera.save_image(filename)
 
-    def get_parameter_list(self, debug=False, index=0):  # Simulate parameters        
+    def get_parameter_list(self, debug=False, index=0):  # Simulate parameters
         if debug:
             with open('./data/mock_request.json') as f:
                 file = json.load(f)
-            self.popid = file['data'][index]['popid'] # Only in tests
+            self.popid = file['data'][index]['popid']  # Only in tests
             return file['data'][index]['lts']
 
     def classify(self):
-        model = TFModel(self.model_name)
+        model = self.tf_predictor.model
         image = self.camera.frame.copy()
         prediction = model.predict(image)
         logger.info(f'{prediction.label}, {prediction.confidence}')
@@ -186,7 +201,7 @@ class Controller:
         self.auto_mode = not self.auto_mode
         if self.manual_mode:
             logger.info('Set to Cobot to Manual mode')
-            self.set_state(AppState.WAITING_INPUT)            
+            self.set_state(AppState.WAITING_INPUT)
         else:
             logger.info('Set Cobot to Automatic mode')
 
@@ -211,10 +226,16 @@ class Controller:
         if e.name == 'm':
             self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()
+        elif e.name == 'q':
+            logger.info('[Command] Closing the camera and quiting application')            
+            self.camera.pause()
+            self.running = False
+            exit(0)
         elif e.name.isdigit() and self.manual_mode:
             logger.info('[Command] Set Manual Program ' + e.name)
             self.set_program(int(e.name))
         elif e.name == 't':
+            logger.info('[Command] Trigger After Pose')
             self.trigger_after_pose()
         elif e.name == 's':
             logger.info('[Command] Saving ScreenShot...')
@@ -226,22 +247,25 @@ class Controller:
             logger.info('[Command] Classifing Image...')
             self.classify()
 
+
     def get_cobot_status(self):
         return self.cobot.status
 
     def get_position_status(self):
         return self.cobot.position_status
 
-    def check_cobot_status(self):         
-        error = False
+    def check_cobot_status(self):
+        status = False
         if self.cobot.status == CobotStatus.EMERGENCY_STOPPED:
-            logger.warning(f"Cobot is under Emergency Stop... Status: {self.cobot.status}")            
-            error = True            
+            logger.warning(
+                f"Cobot is under Emergency Stop... Status: {self.cobot.status}")
+            status = True
         elif self.cobot.status != CobotStatus.RUNNING:
-            logger.warning(f"Cobot is not ready for work... Status: {self.cobot.status}")
-            error = True
+            logger.warning(
+                f"Cobot is not ready for work... Status: {self.cobot.status}")
+            status = True
         sleep(1)
-        return error
+        return status
 
-    def wait_input(self):                
-        self.flag_new_product = True
+    def wait_input(self):
+        self.flag_new_product = False

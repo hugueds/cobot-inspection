@@ -13,6 +13,7 @@ camera:
   resolution: "640x480"
   window_size: [900, 700]
   full_screen: False
+  inverted: True
   roi: []
   fps: 15
   folder: "temp"
@@ -23,7 +24,7 @@ camera:
   saturation: 0
   sharpness: 0
 cobot:
-  ip: "10.8.66.212"
+  ip: "127.0.0.1"
   tcp_port: 0
   modbus_port: 502
   update_time: 0.2

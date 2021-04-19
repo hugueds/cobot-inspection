@@ -1,9 +1,13 @@
-from classes.controller import Controller
 from enumerables.app_state import AppState
-from tests import camera_test
 from time import sleep
-from classes import  Camera, Controller
+from classes import  Controller
+import sys
 
 c = Controller()
+
+while True:
+    print('ok')
+    sleep(1)
+
 
 
