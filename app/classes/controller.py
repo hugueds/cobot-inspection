@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 import yaml
 import keyboard
@@ -10,7 +9,8 @@ from threading import Thread
 from datetime import datetime
 from time import sleep
 from enumerables import AppState
-from classes import Camera, Cobot
+from classes.camera import Camera
+from classes.cobot import Cobot
 from models import CameraInfo, Prediction, Job
 from enumerables import CobotStatus, OperationResult
 from logger import logger
@@ -30,7 +30,7 @@ class Controller:
 
     state: AppState = AppState.INITIAL
     operation_result: OperationResult = OperationResult.NONE
-    job: Job = None
+    job: Job = None    
     total_programs: int = 0
     program_list = []
     parameter_list = []
@@ -53,7 +53,7 @@ class Controller:
         self.camera = camera if camera else Camera()
         self.tf_predictor = TFPredictor()
         self.display_info()
-        self.debug = debug
+        self.debug = debug        
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
 
     def connect_to_cobot(self):
@@ -110,7 +110,7 @@ class Controller:
     def set_waiting_program(self):
         self.program = PRG_WAITING
         self.cobot.set_program(PRG_WAITING)
-        sleep(0.2)
+        sleep(0.2)        
 
     def set_state(self, state: AppState):
         self.state = state
@@ -119,7 +119,7 @@ class Controller:
         logger.info('Starting Cobot Data Update...')
         while self.running and self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
-            self.cobot.update_interface(self.state)
+            self.cobot.update_interface(self.state)            
             sleep(0.2)  # TODO Get via config
         else:
             logger.error('Cobot Data Update has stopped')
@@ -228,9 +228,8 @@ class Controller:
             self.change_auto_man()
         elif e.name == 'q':
             logger.info('[Command] Closing the camera and quiting application')            
-            self.camera.pause()
-            self.running = False
-            exit(0)
+            self.camera.stop()
+            self.running = False            
         elif e.name.isdigit() and self.manual_mode:
             logger.info('[Command] Set Manual Program ' + e.name)
             self.set_program(int(e.name))
@@ -256,11 +255,11 @@ class Controller:
 
     def check_cobot_status(self):
         status = False
-        if self.cobot.status == CobotStatus.EMERGENCY_STOPPED:
+        if self.cobot.status == CobotStatus.EMERGENCY_STOPPED.value:
             logger.warning(
                 f"Cobot is under Emergency Stop... Status: {self.cobot.status}")
             status = True
-        elif self.cobot.status != CobotStatus.RUNNING:
+        elif self.cobot.status != CobotStatus.RUNNING.value:
             logger.warning(
                 f"Cobot is not ready for work... Status: {self.cobot.status}")
             status = True

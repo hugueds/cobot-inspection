@@ -26,11 +26,14 @@ class Cobot:
 
     trigger = 0
 
-    def __init__(self, config_path='config.yml') -> None:
-        with open(config_path, 'r') as file:
-            config = yaml.safe_load(file)
-        self.ip = config['cobot']['ip']
-        self.port = int(config['cobot']['modbus_port'])
+    def __init__(self, config_path='config.yml', ip='', port='') -> None:
+        self.ip = ip
+        self.port = port
+        if config_path:
+            with open(config_path, 'r') as file:
+                config = yaml.safe_load(file)
+            self.ip = config['cobot']['ip']
+            self.port = int(config['cobot']['modbus_port'])        
 
     def connect(self):
         try:
@@ -56,6 +59,26 @@ class Cobot:
     def move_to_waiting(self):
         self.selected_program = 0
         self.set_program(self.selected_program)
+
+    def get_pose(self) -> Pose:
+        pose = Pose()
+        pose.base = self.__read_register(ModbusInterface.BASE_JOINT.value)
+        pose.shoulder = self.__read_register(ModbusInterface.SHOULDER_JOINT.value)
+        pose.elbow = self.__read_register(ModbusInterface.ELBOW_JOINT.value)
+        pose.wrist_1 = self.__read_register(ModbusInterface.WRIST_1_JOINT.value)
+        pose.wrist_2 = self.__read_register(ModbusInterface.WRIST_2_JOINT.value)
+        pose.wrist_3 = self.__read_register(ModbusInterface.WRIST_3_JOINT.value)
+        self.pose = pose
+        return pose
+
+    def set_pose(self, pose: Pose):        
+        self.__write_register(ModbusInterface.BASE_JOINT.value, pose.base)
+        self.__write_register(ModbusInterface.SHOULDER_JOINT.value, pose.shoulder)
+        self.__write_register(ModbusInterface.ELBOW_JOINT.value, pose.elbow)
+        self.__write_register(ModbusInterface.WRIST_1_JOINT.value, pose.wrist_1)
+        self.__write_register(ModbusInterface.WRIST_2_JOINT.value, pose.wrist_2)
+        self.__write_register(ModbusInterface.WRIST_3_JOINT.value, pose.wrist_3)
+        self.__write_register(ModbusInterface.SET_POSE.value, 1)
     
     def __read_register(self, address: int):
         try:

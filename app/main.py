@@ -13,13 +13,18 @@ debug = args.debug
 
 controller = Controller(debug)
 
-while controller.running:       
+while controller.running:   
+
+
     
     if controller.state != AppState.INITIAL and not controller.check_cobot_status():
+        print('Test 1')
         continue
 
     elif controller.manual_mode and controller.state == AppState.WAITING_INPUT:
+        print('Test 2')
         continue
+
 
     if controller.state == AppState.INITIAL:
         logger.info('Starting Program...')
@@ -30,6 +35,7 @@ while controller.running:
         sleep(1)    
 
     elif controller.state == AppState.WAITING_INPUT:
+        print('wait')
         controller.wait_input()
         if controller.flag_new_product:
             controller.new_product()
@@ -83,6 +89,9 @@ while controller.running:
         controller.operation_result = 1 if True else False        
         total_time = (datetime.now() - controller.start_datetime).seconds        
         logger.info(f"Total operation time: {total_time}")
+        controller.set_state(AppState.WAITING_INPUT)
+
+    elif controller.state == AppState.PARAMETER_NOT_FOUND:
         controller.set_state(AppState.WAITING_INPUT)
 
     sleep(0.2)

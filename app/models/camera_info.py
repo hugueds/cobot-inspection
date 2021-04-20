@@ -1,4 +1,5 @@
 from datetime import datetime
+from models.pose import Pose
 from typing import List
 from models.prediction import Prediction
 from dataclasses import dataclass
