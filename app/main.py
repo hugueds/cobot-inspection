@@ -13,18 +13,13 @@ debug = args.debug
 
 controller = Controller(debug)
 
-while controller.running:   
-
-
+while controller.running:
     
-    if controller.state != AppState.INITIAL and not controller.check_cobot_status():
-        print('Test 1')
+    if controller.state != AppState.INITIAL and not controller.check_cobot_status():        
         continue
 
-    elif controller.manual_mode and controller.state == AppState.WAITING_INPUT:
-        print('Test 2')
+    elif controller.manual_mode and controller.state == AppState.WAITING_INPUT:        
         continue
-
 
     if controller.state == AppState.INITIAL:
         logger.info('Starting Program...')
@@ -34,8 +29,7 @@ while controller.running:
         logger.info('Waiting for an Input...')
         sleep(1)    
 
-    elif controller.state == AppState.WAITING_INPUT:
-        print('wait')
+    elif controller.state == AppState.WAITING_INPUT:        
         controller.wait_input()
         if controller.flag_new_product:
             controller.new_product()

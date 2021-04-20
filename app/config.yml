@@ -24,7 +24,7 @@ camera:
   saturation: 0
   sharpness: 0
 cobot:
-  ip: "127.0.0.1"
+  ip: "10.8.66.212"
   tcp_port: 0
   modbus_port: 502
   update_time: 0.2

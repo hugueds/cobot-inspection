@@ -6,7 +6,5 @@ from typing import List
 class Job:
     popid: str = ''
     component_unit: str = ''
-    size: int = 0
-    model_name: str = ''
     parameter_list = []
     start_time: datetime = datetime.now()

@@ -9,6 +9,7 @@ from threading import Thread
 from datetime import datetime
 from time import sleep
 from enumerables import AppState
+from classes.barcode_scanner import BarcodeScanner
 from classes.camera import Camera
 from classes.cobot import Cobot
 from models import CameraInfo, Prediction, Job
@@ -47,8 +48,12 @@ class Controller:
     results = []
     popid = ''
     running = True
+    popid_buffer = []
+    component_list = [7500, 7817, 8734, 7506, 9382]
+    selected_component = ''
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:
+        self.barcode = BarcodeScanner().start()
         self.cobot = cobot if cobot else Cobot()
         self.camera = camera if camera else Camera()
         self.tf_predictor = TFPredictor()
@@ -76,13 +81,13 @@ class Controller:
         self.program_index = 0
         self.pose_times = []
         self.parameters_found = False
-        self.total_programs = 0
-        self.job = Job()
+        self.total_programs = 0        
         logger.info(f'New Popid in Station: {self.popid}')
 
     def load_parameters(self):  # Fazer download do SQL
         # TODO Flag de loading para nao rodar duas vezes as consultas
         logger.info(f"Collecting parameters for POPID {self.popid}")
+        self.job = Job(popid=self.popid, component_unit='')
         self.job.parameter_list = self.get_parameter_list(debug=True, index=0)
         self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
         self.total_programs = len(self.job.program_list)
@@ -119,7 +124,7 @@ class Controller:
         logger.info('Starting Cobot Data Update...')
         while self.running and self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
-            self.cobot.update_interface(self.state)            
+            self.cobot.update_interface(self.state.value)            
             sleep(0.2)  # TODO Get via config
         else:
             logger.error('Cobot Data Update has stopped')
@@ -147,10 +152,10 @@ class Controller:
                 info.cu = self.job.component_unit
                 info.popid = self.job.popid
                 info.parameters = self.job.parameter_list
-                info.jobtime = str(
-                    (datetime.now() - self.job.start_time).seconds)
-                info.uptime = str(
-                    (datetime.now() - self.start_datetime).seconds)
+                jt = str((datetime.now() - self.job.start_time).seconds)
+                info.jobtime = jt
+                ut = str((datetime.now() - self.start_datetime).seconds)
+                info.uptime = ut
 
             self.camera.display_info(info)
 
@@ -267,4 +272,6 @@ class Controller:
         return status
 
     def wait_input(self):
+        # Verifica se existem popids na fila, busca o primeiro inserido e o remove
+        # Enquanto estiver vazia seta a Flag de new product para false
         self.flag_new_product = False
