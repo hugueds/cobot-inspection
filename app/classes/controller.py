@@ -49,7 +49,7 @@ class Controller:
     popid = ''
     running = True
     popid_buffer = []
-    component_list = [7500, 7817, 8734, 7506, 9382]
+    component_list = ['7500', '7817', '8734', '7506', '9382']
     selected_component = ''
 
     def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:

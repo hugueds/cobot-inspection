@@ -8,8 +8,7 @@ class BarcodeScanner:
 
     def start(self):
         self.running = True
-        Thread(target=self.update, daemon=True)
-        print('ok')
+        Thread(target=self.update, daemon=True).start()        
         
     def update(self):
         logger.info('Starting Barcode Update Thread...')
