@@ -24,3 +24,7 @@ app/screenshots
 
 machine_learning
 logs
+
+__pycache__
+*/__pycache__
+*/*/__pycache__
