@@ -1,3 +1,4 @@
+from logging import log
 import yaml
 from threading import Thread
 from time import sleep
@@ -87,18 +88,21 @@ class Cobot:
             reg = self.modbus_client.read_holding_registers(address, count=count)
             return reg.registers
         except Exception as e:
-            return print('Cobot::__read_register::', str(e))
+            logger.error(e)            
 
     def __write_register(self, address: int, values):
         try:
             self.modbus_client.write_registers(address, values)
         except Exception as e:            
-            return print('Cobot::__write_register::', str(e))
+            logger.error(e)
 
     def read_interface(self):
-        self.status = CobotStatus(self.__read_register(ModbusInterface.COBOT_STATUS.value)[0])
-        self.position_status = PositionStatus(self.__read_register(ModbusInterface.POSITION_STATUS.value)[0])
-        self.running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)[0]
+        status = self.__read_register(ModbusInterface.COBOT_STATUS.value)
+        position_status = self.__read_register(ModbusInterface.POSITION_STATUS.value)
+        running_program = self.__read_register(ModbusInterface.RUNNING_PROGRAM.value)
+        self.status = CobotStatus(0) if status is None else CobotStatus(status[0])
+        self.position_status = PositionStatus(0) if position_status is None else PositionStatus(position_status[0])
+        self.running_program = 0 if running_program is None else running_program
         # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
 
 

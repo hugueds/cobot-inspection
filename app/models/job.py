@@ -6,5 +6,6 @@ from typing import List
 class Job:
     popid: str = ''
     component_unit: str = ''
+    status: int = 0
     parameter_list = []
     start_time: datetime = datetime.now()

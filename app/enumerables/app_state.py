@@ -7,8 +7,8 @@ class AppState(Enum):
     LOADING_PARAMETERS = 2
     PARAMETER_LOADED = 3
     MOVING_TO_WAITING = 4
-    MOVING_TO_POSE = 5
-    MOVING_TO_AFTER_POSE = 6
+    MOVING_TO_PRE_POSE = 5
+    MOVING_TO_POSE = 6
     COLLECTING_IMAGE = 7
     PROCESSING_IMAGES = 8
     FINISHED = 9
@@ -17,3 +17,4 @@ class AppState(Enum):
     EMERGENCY_STOP = -3
     PARAMETER_NOT_FOUND = -4
     NONE = None
+    

@@ -7,7 +7,8 @@ app:
 debug: False
 controller:
   debug_model: False
-  process_after_shot: False
+  process_after_shot: True
+  component_list: ['7500', '7817', '8734', '7506', '9382'] # Transfer to database
 camera:
   src: 0
   resolution: "640x480"
@@ -19,10 +20,10 @@ camera:
   folder: "temp"
   results_folder: "results"
   debug: False
-  brightness: 0
-  contrast: 0
-  saturation: 0
-  sharpness: 0
+  brightness: 127
+  contrast: 127
+  saturation: 127
+  sharpness: 127
 cobot:
   ip: "10.8.66.212"
   tcp_port: 0
@@ -33,7 +34,11 @@ models:
   size: 224
   channels: 3
 database:
-  name: "cobot.db"
+  server: '10.8.66.119'
+  user: 'lts'
+  password: 'lts123'
+  database: 'LTS'
+  workplace_id: 999
 log:
   name: "cobot_app"
   path: "logs"

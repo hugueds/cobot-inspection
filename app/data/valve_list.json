@@ -3,7 +3,14 @@
         {
             "number": 1,
             "component_unit": 7500,
-            "sequence": 0
+            "sequence": 0,
+            "poses": [
+                {
+                    "sequence": 0,
+                    "hasInspection": false,
+                    "joints": []
+                }
+            ]
         },
         {
             "number": 2,

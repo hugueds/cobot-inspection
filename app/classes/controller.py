@@ -1,3 +1,4 @@
+from models.pose import Pose
 import os
 import json
 import yaml
@@ -12,26 +13,26 @@ from enumerables import AppState
 from classes.barcode_scanner import BarcodeScanner
 from classes.camera import Camera
 from classes.cobot import Cobot
+from classes.tf_predictor import TFPredictor        
 from models import CameraInfo, Prediction, Job
 from enumerables import CobotStatus, OperationResult
 from logger import logger
 
-with open('config.yml') as f:
-    config = yaml.safe_load(f)
-    debug = config['controller']['debug_model']
-
-if not debug:
-    from classes import TFPredictor
 
 PRG_WAITING = 0
 PRG_HOME = 99
 AFTERPOSE_TRIGGER = 2
 
+
 class Controller:
 
     state: AppState = AppState.INITIAL
     operation_result: OperationResult = OperationResult.NONE
-    job: Job = None    
+    job: Job = None
+    barcode = BarcodeScanner()
+    cobot = Cobot()
+    camera = Camera()
+    tf_predictor = TFPredictor()
     total_programs: int = 0
     program_list = []
     parameter_list = []
@@ -49,14 +50,17 @@ class Controller:
     popid = ''
     running = True
     popid_buffer = []
-    component_list = ['7500', '7817', '8734', '7506', '9382']
+    component_list = []
     selected_component = ''
+    component_index = 0
 
-    def __init__(self, cobot: Cobot = None, camera: Camera = None, debug=False) -> None:
-        self.barcode = BarcodeScanner().start()
-        self.cobot = cobot if cobot else Cobot()
-        self.camera = camera if camera else Camera()
-        self.tf_predictor = TFPredictor()
+    def __init__(self, debug=False, config='config.yml') -> None:
+        with open('config.yml') as f:
+            config = yaml.safe_load(f)
+            debug_model = config['controller']['debug_model']
+            self.component_list = config['controller']['component_list']                
+        self.barcode.start()
+        
         self.display_info()
         self.debug = debug        
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
@@ -81,20 +85,41 @@ class Controller:
         self.program_index = 0
         self.pose_times = []
         self.parameters_found = False
-        self.total_programs = 0        
+        self.total_programs = 0
         logger.info(f'New Popid in Station: {self.popid}')
 
     def load_parameters(self):  # Fazer download do SQL
         # TODO Flag de loading para nao rodar duas vezes as consultas
         logger.info(f"Collecting parameters for POPID {self.popid}")
-        self.job = Job(popid=self.popid, component_unit='')
-        self.job.parameter_list = self.get_parameter_list(debug=True, index=0)
-        self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
-        self.total_programs = len(self.job.program_list)
-        self.parameters_found = True
-        self.parameter = self.parameter_list[0]
+        # Collect all poses for all components
+        # Print all Component Units Found on Database
+        # self.job = Job(popid=self.popid, component_unit='')
+        # self.job.parameter_list = self.get_parameter_list(debug=True, index=0)
+        # self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
+        # self.total_programs = len(self.job.program_list)
+        # self.parameters_found = True
+        # self.parameter = self.parameter_list[0]
         # Load Model
-        self.tf_predictor.load_single_model(self.job.component_unit)
+        # self.tf_predictor.load_single_model(self.job.component_unit)    
+
+    def start_job(self, component_unit):
+        # Busca Pose inicial para o component e envia para o cobot, aguardando sua chegada
+        self.job = Job(self.popid, component_unit)
+        self.job.status = 1
+        self.tf_predictor.load_single_model(component_unit)
+        pose = self.get_pose(component_unit, 0)
+        self.cobot.set_pose(pose)        
+    
+    def job_done(self):
+        self.job.status = 2
+        # Create a report using the job results        
+
+    def abort_job(self):
+        self.job.status = 3        
+
+    def get_pose(self, component_unit, index) -> Pose:
+        # Pose, take picture?
+        pass
 
     def next_pose(self):
         program = self.job.program_list[self.program_index]
@@ -115,7 +140,7 @@ class Controller:
     def set_waiting_program(self):
         self.program = PRG_WAITING
         self.cobot.set_program(PRG_WAITING)
-        sleep(0.2)        
+        sleep(0.2)
 
     def set_state(self, state: AppState):
         self.state = state
@@ -124,7 +149,7 @@ class Controller:
         logger.info('Starting Cobot Data Update...')
         while self.running and self.cobot.modbus_client.is_socket_open:
             self.cobot.read_interface()
-            self.cobot.update_interface(self.state.value)            
+            self.cobot.update_interface(self.state.value)
             sleep(0.2)  # TODO Get via config
         else:
             logger.error('Cobot Data Update has stopped')
@@ -225,6 +250,8 @@ class Controller:
             else:
                 self.results.append(False)
             i += 1
+        total_time = (datetime.now() - self.start_datetime).seconds        
+        logger.info(f"Total operation time: {total_time}")
 
     def on_event(self, e: keyboard.KeyboardEvent):
         logger.info(f'[EVENT] Key: {e.name} was pressed')
@@ -232,25 +259,24 @@ class Controller:
             self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()
         elif e.name == 'q':
-            logger.info('[Command] Closing the camera and quiting application')            
+            logger.info('[COMMAND] Closing the camera and quiting application')
             self.camera.stop()
-            self.running = False            
+            self.running = False
         elif e.name.isdigit() and self.manual_mode:
-            logger.info('[Command] Set Manual Program ' + e.name)
+            logger.info('[COMMAND] Set Manual Program ' + e.name)
             self.set_program(int(e.name))
         elif e.name == 't':
-            logger.info('[Command] Trigger After Pose')
+            logger.info('[COMMAND] Trigger After Pose')
             self.trigger_after_pose()
         elif e.name == 's':
-            logger.info('[Command] Saving ScreenShot...')
+            logger.info('[COMMAND] Saving ScreenShot...')
             self.camera.save_screenshot(str(self.program))
         elif e.name == 'n':
-            logger.info('[Command] New Flag')
+            logger.info('[COMMAND] New Flag')
             self.flag_new_product = True
         elif e.name == 'z':
-            logger.info('[Command] Classifing Image...')
+            logger.info('[COMMAND] Classifing Image...')
             self.classify()
-
 
     def get_cobot_status(self):
         return self.cobot.status
@@ -259,19 +285,20 @@ class Controller:
         return self.cobot.position_status
 
     def check_cobot_status(self):
-        status = False
+        status = True
         if self.cobot.status == CobotStatus.EMERGENCY_STOPPED.value:
             logger.warning(
                 f"Cobot is under Emergency Stop... Status: {self.cobot.status}")
-            status = True
+            status = False
         elif self.cobot.status != CobotStatus.RUNNING.value:
             logger.warning(
                 f"Cobot is not ready for work... Status: {self.cobot.status}")
-            status = True
+            status = False
         sleep(1)
         return status
 
-    def wait_input(self):
-        # Verifica se existem popids na fila, busca o primeiro inserido e o remove
-        # Enquanto estiver vazia seta a Flag de new product para false
-        self.flag_new_product = False
+    def wait_new_product(self):        
+        # Enquanto estiver vazia seta a Flag de new product para false        
+        popid = self.barcode.get_buffer()
+        if popid:
+            self.flag_new_product = True
