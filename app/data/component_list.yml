@@ -1,0 +1,38 @@
+---
+component_list:
+  - number: '7500'
+    sequence: 0
+    poses:
+      - sequence: 1
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.455, -2.034, -1.952, -0.666, 1.447, -1.972]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.59, -1.866, -2.216, -0.694, 1.321, -1.535]
+      - sequence: 3
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.293, -1.57, -2.465, -1.063, 1.61, -0.222]
+      - sequence: 4
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-1.742, -1.494, -2.558, -0.634, 1.893, 1.246]
+      - sequence: 5
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.525, -1.583, -2.201, -2.41, -2.554, 0.181]
+  - number: '7817'
+    sequence: 1
+  - number: '8734'
+    sequence: 2
+  - number: '7506'
+    sequence: 3
+  - number: '9382'
+    sequence: 4

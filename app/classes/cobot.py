@@ -3,14 +3,15 @@ import yaml
 from threading import Thread
 from time import sleep
 from pymodbus.client.sync import ModbusTcpClient
-from models import Pose
+from models import Pose, Joint
 from enumerables import ModbusInterface, PositionStatus, CobotStatus
 from logger import logger
 
 class Cobot:
 
-    life_beat = -1
     status = CobotStatus.NONE
+    pose: Pose
+    life_beat = -1
     move_status = 0
     modbus_client = None
     emergency = False
@@ -21,7 +22,6 @@ class Cobot:
 
     pose_seconds = 0
     job_seconds = 0
-    pose = Pose(0, 0, 0, 0, 0, 0)
     thread_running = True    
     home_program = 99
 
@@ -62,24 +62,23 @@ class Cobot:
         self.selected_program = 0
         self.set_program(self.selected_program)
 
-    def get_test(self):
-        return self.__read_register(200, 6)
-
     def get_pose(self) -> Pose:
         pose = Pose()
         first_address = ModbusInterface.BASE_JOINT.value
-        pose_array = self.__read_register(first_address, 6)
-        pose.base     = pose_array[0]
-        pose.shoulder = pose_array[1]
-        pose.elbow    = pose_array[2]
-        pose.wrist_1  = pose_array[3]
-        pose.wrist_2  = pose_array[4]
-        pose.wrist_3  = pose_array[5]
-        self.pose = pose        
+        pose_array = self.__read_register(first_address, 6)        
+        pose.joint.base     = pose_array[0]
+        pose.joint.shoulder = pose_array[1]
+        pose.joint.elbow    = pose_array[2]
+        pose.joint.wrist_1  = pose_array[3]
+        pose.joint.wrist_2  = pose_array[4]
+        pose.joint.wrist_3  = pose_array[5]
+        self.pose.joint = pose.joint
+        return pose
 
     def set_pose(self, pose: Pose):
         first_address = ModbusInterface.POSE_BASE.value
-        pose_array = [pose.base, pose.shoulder, pose.elbow, pose.wrist_1, pose.wrist_2, pose.wrist_3]
+        joints = pose.get_joint_list()
+        pose_array = [joints, pose.speed, pose.acc]
         self.__write_register(first_address, pose_array)
         self.__write_register(ModbusInterface.SET_POSE.value, 1)
     
@@ -105,20 +104,11 @@ class Cobot:
         self.running_program = 0 if running_program is None else running_program
         # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
 
-
     def update_interface(self, state: int):
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
         self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
-        self.__write_register(ModbusInterface.PROGRAM_STATE.value, state)        
-        
-    def next_pose(self):
-        # write_register
-        pass
-
-    def previous_pose(self):
-        # write_register
-        pass
-
+        self.__write_register(ModbusInterface.PROGRAM_STATE.value, state)
+    
     def start_read_thread(self):         
         self.thread_running = True
         self.thread = Thread(target=self.read_interface_2, daemon=True)
@@ -133,3 +123,10 @@ class Cobot:
             sleep(1)
         else:
             logger.error('Modbus Interface Disconnected')
+      
+
+
+
+
+    def get_test(self):
+        return self.__read_register(200, 6)

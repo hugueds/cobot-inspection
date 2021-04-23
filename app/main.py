@@ -51,24 +51,41 @@ while controller.running:
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_WAITING:
-        logger.info("Moving to Waiting...")
-        if controller.get_position_status() == PositionStatus.POSE:
-            if controller.program_index < controller.total_programs:
+        logger.info("Moving to Waiting...")                  
+
+        if controller.get_position_status() == PositionStatus.POSE:            
+            # Check the index of the Pose to ensure is not empty
+            if controller.component_index >= controller.total_components - 1:
+                controller.set_state(AppState.FINISHED)        
+            elif controller.total_poses > 0:
                 controller.next_pose()
                 controller.set_state(AppState.MOVING_TO_POSE)
             else:
-                controller.job_done()
                 # Verify the amount of jobs remaining
+                controller.job_done()
 
     elif controller.state == AppState.MOVING_TO_POSE:
         logger.info("Moving to Pose...")
+        index = 0
         if controller.get_position_status() == PositionStatus.POSE:
-            if True: # If current pose has a parameter por picture
-                controller.set_state(AppState.COLLECTING_IMAGE)
+            # Check the index of the Pose            
+            if controller.pose_index > controller.total_poses:
+                controller.job_done()
+                controller.set_state(AppState.MOVING_TO_WAITING)
             else:
-                controller.next_pose()
-                sleep(0.2)
-                controller.set_state(AppState.MOVING_TO_POSE)
+                if controller.component_list[index]['has_inspection']: # If current pose has a parameter por picture
+                    controller.set_state(AppState.COLLECTING_IMAGE)
+                else:
+                    controller.next_pose()
+                    sleep(0.2)
+                    controller.set_state(AppState.MOVING_TO_POSE)
+
+    elif controller.state == AppState.FINISHED:
+        logger.info('All Component Jobs finished, Returning to Home Position')
+        # Generate Report
+        # Clear all variables
+        # print all next popids in the queue
+        controller.set_state(AppState.WAITING_INPUT)
 
     # elif controller.state == AppState.PARAMETER_LOADED: # OLD
     #     controller.clear_folder()

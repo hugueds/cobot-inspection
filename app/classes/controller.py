@@ -14,7 +14,7 @@ from classes.barcode_scanner import BarcodeScanner
 from classes.camera import Camera
 from classes.cobot import Cobot
 from classes.tf_predictor import TFPredictor        
-from models import CameraInfo, Prediction, Job
+from models import CameraInfo, Prediction, Job, Component
 from enumerables import CobotStatus, OperationResult
 from logger import logger
 
@@ -53,17 +53,24 @@ class Controller:
     component_list = []
     selected_component = ''
     component_index = 0
+    pose_index = 0
+    total_poses = 0
 
-    def __init__(self, debug=False, config='config.yml') -> None:
-        with open('config.yml') as f:
-            config = yaml.safe_load(f)
-            debug_model = config['controller']['debug_model']
-            self.component_list = config['controller']['component_list']                
-        self.barcode.start()
-        
-        self.display_info()
+    def __init__(self, debug=False, config='config.yml') -> None:        
         self.debug = debug        
+        self.load_component_list()
+        self.barcode.start()        
+        self.display_info()
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
+
+    def load_component_list(self):
+        with open('data/component_list.yml') as f:
+            component_list = yaml.safe_load(f)['component_list']
+            component_list = sorted(component_list, key=lambda x: x['sequence'])
+            self.component_list = component_list
+            self.component_index = 0
+            self.total_components = len(self.component_list)
+            # Convert component_list to Class of Components
 
     def connect_to_cobot(self):
         self.cobot.connect()
@@ -81,11 +88,11 @@ class Controller:
 
     def new_product(self):
         self.flag_new_product = False
-        self.operation_result = 0
-        self.program_index = 0
+        self.operation_result = OperationResult.NONE
+        self.program_index = 0        
+        self.component_index = 0
         self.pose_times = []
-        self.parameters_found = False
-        self.total_programs = 0
+        self.parameters_found = False        
         logger.info(f'New Popid in Station: {self.popid}')
 
     def load_parameters(self):  # Fazer download do SQL
@@ -98,24 +105,23 @@ class Controller:
         # self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
         # self.total_programs = len(self.job.program_list)
         # self.parameters_found = True
-        # self.parameter = self.parameter_list[0]
-        # Load Model
-        # self.tf_predictor.load_single_model(self.job.component_unit)    
+        # self.parameter = self.parameter_list[0]        
 
     def start_job(self, component_unit):
         # Busca Pose inicial para o component e envia para o cobot, aguardando sua chegada
-        self.job = Job(self.popid, component_unit)
-        self.job.status = 1
-        self.tf_predictor.load_single_model(component_unit)
-        pose = self.get_pose(component_unit, 0)
+        self.job = Job(self.popid, component_unit['number'])
+        self.job.status = 1 # Create a enumerable for jobs
+        self.tf_predictor.load_single_model(component_unit['number'])
+        self.pose_index = 0
+        pose = self.get_pose(component_unit, self.pose_index)
         self.cobot.set_pose(pose)        
     
     def job_done(self):
-        self.job.status = 2
+        self.job.status = 2 # Create a enumerable for jobs
         # Create a report using the job results        
 
     def abort_job(self):
-        self.job.status = 3        
+        self.job.status = 3 # Create a enumerable for jobs     
 
     def get_pose(self, component_unit, index) -> Pose:
         # Pose, take picture?
@@ -297,8 +303,8 @@ class Controller:
         sleep(1)
         return status
 
-    def wait_new_product(self):        
-        # Enquanto estiver vazia seta a Flag de new product para false        
+    def wait_new_product(self):
         popid = self.barcode.get_buffer()
         if popid:
+            self.popid = popid
             self.flag_new_product = True
