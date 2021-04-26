@@ -86,7 +86,7 @@ def run():
                     controller.set_program(controller.program)
                     controller.set_state(AppState.MOVING_TO_POSE)
                 else:
-                    controller.set_state(AppState.PROCESSING_IMAGES)
+                    controller.set_state(AppState.PROCESSING_IMAGE)
 
         elif controller.state == AppState.MOVING_TO_POSE:
             print('Moving to Pose', controller.program_index + 1)
@@ -102,7 +102,7 @@ def run():
             controller.set_program(0) # do a new function
             controller.set_state(AppState.MOVING_TO_WAITING)
 
-        elif controller.state == AppState.PROCESSING_IMAGES:
+        elif controller.state == AppState.PROCESSING_IMAGE:
             print('Processing collected images...')
             sleep(5)
             print('Job Finished!')

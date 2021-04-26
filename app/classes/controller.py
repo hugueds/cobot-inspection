@@ -1,4 +1,4 @@
-from models.pose import Pose
+from models.pose import Joint, Pose
 import os
 import json
 import yaml
@@ -14,11 +14,13 @@ from classes.barcode_scanner import BarcodeScanner
 from classes.camera import Camera
 from classes.cobot import Cobot
 from classes.tf_predictor import TFPredictor        
-from models import CameraInfo, Prediction, Job, Component
+from models import CameraInfo, Prediction, Job, Component, prediction
 from enumerables import CobotStatus, OperationResult
 from logger import logger
+from database import DAO
 
 
+HOME_JOINTS = [0,0,0,0,0,0]
 PRG_WAITING = 0
 PRG_HOME = 99
 AFTERPOSE_TRIGGER = 2
@@ -29,11 +31,11 @@ class Controller:
     state: AppState = AppState.INITIAL
     operation_result: OperationResult = OperationResult.NONE
     job: Job = None
+    dao: DAO()
     barcode = BarcodeScanner()
     cobot = Cobot()
     camera = Camera()
-    tf_predictor = TFPredictor()
-    total_programs: int = 0
+    tf_predictor = TFPredictor()    
     program_list = []
     parameter_list = []
     program = 0
@@ -43,7 +45,6 @@ class Controller:
     parameters_found = False
     manual_mode = False
     auto_mode = True
-    parameter: str = ''
     flag_new_product = False
     predictions: List[Prediction] = []
     results = []
@@ -51,10 +52,13 @@ class Controller:
     running = True
     popid_buffer = []
     component_list = []
+    parameter: str = ''
     selected_component = ''
     component_index = 0
     pose_index = 0
     total_poses = 0
+    param_index = 0
+    total_param = 0
 
     def __init__(self, debug=False, config='config.yml') -> None:        
         self.debug = debug        
@@ -65,11 +69,13 @@ class Controller:
 
     def load_component_list(self):
         with open('data/component_list.yml') as f:
+            logger.info('Loading Component List')
             component_list = yaml.safe_load(f)['component_list']
             component_list = sorted(component_list, key=lambda x: x['sequence'])
             self.component_list = component_list
             self.component_index = 0
             self.total_components = len(self.component_list)
+            logger.info(f"Components Loaded: {[x['number'] for x in component_list]}")
             # Convert component_list to Class of Components
 
     def connect_to_cobot(self):
@@ -89,7 +95,7 @@ class Controller:
     def new_product(self):
         self.flag_new_product = False
         self.operation_result = OperationResult.NONE
-        self.program_index = 0        
+        self.param_index = 0        
         self.component_index = 0
         self.pose_times = []
         self.parameters_found = False        
@@ -97,56 +103,57 @@ class Controller:
 
     def load_parameters(self):  # Fazer download do SQL
         # TODO Flag de loading para nao rodar duas vezes as consultas
-        logger.info(f"Collecting parameters for POPID {self.popid}")
-        # Collect all poses for all components
-        # Print all Component Units Found on Database
-        # self.job = Job(popid=self.popid, component_unit='')
-        # self.job.parameter_list = self.get_parameter_list(debug=True, index=0)
-        # self.job.program_list = [int(x[5:7]) for x in self.parameter_list]
-        # self.total_programs = len(self.job.program_list)
+        logger.info(f"Collecting parameters for POPID {self.popid}")        
+        # Print all Component Units Found on Database        
+        self.job.parameter_list = self.get_parameter_list(self.popid, debug=True, index=0)
         # self.parameters_found = True
-        # self.parameter = self.parameter_list[0]        
+        # self.parameter = self.parameter_list[0]
 
     def start_job(self, component_unit):
-        # Busca Pose inicial para o component e envia para o cobot, aguardando sua chegada
+        # TODO: Log the component loaded
         self.job = Job(self.popid, component_unit['number'])
-        self.job.status = 1 # Create a enumerable for jobs
+        self.selected_component = list(filter(lambda x: x['number'] == component_unit['number'], self.component_list))[0]
         self.tf_predictor.load_single_model(component_unit['number'])
+        self.job.status = 1 # Create a enumerable for jobs
         self.pose_index = 0
+        self.param_index = 0
+        self.predictions = []
+        self.total_poses = len(self.selected_component['poses'])
         pose = self.get_pose(component_unit, self.pose_index)
-        self.cobot.set_pose(pose)        
+        self.cobot.set_pose(pose)
+        logger.info(f'Job for component {self.selected_component["number"]} started')
     
     def job_done(self):
         self.job.status = 2 # Create a enumerable for jobs
-        # Create a report using the job results        
+        # TODO: Create a report using the job results        
+        if self.component_index < self.total_components - 1:
+            self.component_index = self.component_index + 1
+            component = self.component_list[self.component_index]
+            self.start_job(component)
 
     def abort_job(self):
         self.job.status = 3 # Create a enumerable for jobs     
 
-    def get_pose(self, component_unit, index) -> Pose:
-        # Pose, take picture?
-        pass
+    def get_pose(self, component_unit, index) -> Pose:        
+        pose_array = component_unit['poses'][index]        
+        pose = Pose(pose_array['joints'], speed=pose_array['speed'], acc=pose_array['acc'])        
+        return pose
+        
+    def check_inspection(self):
+        index = self.component_index
+        return self.component_list[index]['has_inspection']
 
-    def next_pose(self):
-        program = self.job.program_list[self.program_index]
-        self.set_program(program)
-        self.parameter = self.parameter_list[self.program_index]
-        self.program_index += 1
-        logger.info(
-            f'Moving to POSE: {self.program_index}/{self.total_programs}')
-        logger.info(f'Running Program: {self.program}')
+    def next_pose(self): # NEW:
+        self.param_result = False        
+        if self.pose_index < self.total_poses - 1:
+            self.pose_index = self.pose_index + 1
+            logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')
+            pose = self.get_pose(self, self.pose_index)
+            self.cobot.set_pose(pose)
 
-    def trigger_after_pose(self):
-        self.cobot.set_trigger(AFTERPOSE_TRIGGER)
-
-    def set_program(self, program):
-        self.program = program
-        self.cobot.set_program(program)
-
-    def set_waiting_program(self):
-        self.program = PRG_WAITING
-        self.cobot.set_program(PRG_WAITING)
-        sleep(0.2)
+    def set_home_pose(self):
+        home_pose = Pose(HOME_JOINTS)
+        self.cobot.set_pose(home_pose)
 
     def set_state(self, state: AppState):
         self.state = state
@@ -196,9 +203,24 @@ class Controller:
         for f in files:
             os.remove(f'{folder}/{f}')
 
-    def process_images(self):
-        self.predictions = []
-        self.tf_predictor.load_single_model(self.job.component_unit)
+    def process_image(self):        
+        expected_pred = self.job.parameter_list[self.param_index]        
+        prediction = self.classify()
+        if prediction.label == expected_pred and prediction.confidence > 0.6: # Update confidence offset later
+            self.param_index = self.param_index + 1
+            self.param_result = True
+            logger.info('Inspection Result OK')
+        else:
+            self.param_result = False
+            logger.info('Inspection Result NOK')
+            logger.info(f'Expected: {expected_pred}, Received: {prediction.label}')
+            # path = f'results/{self.popid}/{self.component_unit}/' IF OK
+            # Path(path).mkdir(parents=True, exist_ok=True)
+            # path = f'{path}/{image_file}'
+            # cv.imwrite(path, edited_image)
+
+    def process_images_v1(self):
+        self.predictions = []        
         folder = self.camera.image_folder
         for image_file in os.listdir(folder):
             if image_file.split('.')[-1] in ['png', 'jpg']:
@@ -219,18 +241,20 @@ class Controller:
         filename = f'{self.program_index}_{parameter}'
         self.camera.save_image(filename)
 
-    def get_parameter_list(self, debug=False, index=0):  # Simulate parameters
+    def get_parameter_list(self, popid='', debug=False, index=0):  # Simulate parameters
+        self.dao.get_parameters(popid)
+        
         if debug:
             with open('./data/mock_request.json') as f:
                 file = json.load(f)
             self.popid = file['data'][index]['popid']  # Only in tests
             return file['data'][index]['lts']
 
-    def classify(self):
-        model = self.tf_predictor.model
+    def classify(self) -> Prediction:
         image = self.camera.frame.copy()
-        prediction = model.predict(image)
+        prediction = self.tf_predictor.predict(image)
         logger.info(f'{prediction.label}, {prediction.confidence}')
+        return prediction
 
     def change_auto_man(self):
         self.manual_mode = not self.manual_mode

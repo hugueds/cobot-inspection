@@ -86,7 +86,7 @@ def run():
                     cobot.set_program(controller.program)
                     controller.state = AppState.MOVING_TO_POSE        
                 else:
-                    controller.state = AppState.PROCESSING_IMAGES
+                    controller.state = AppState.PROCESSING_IMAGE
 
         elif controller.state == AppState.MOVING_TO_POSE:
             print('Moving to Pose', controller.program_index + 1)
@@ -102,7 +102,7 @@ def run():
             cobot.move_to_waiting()
             controller.state = AppState.MOVING_TO_WAITING
 
-        elif controller.state == AppState.PROCESSING_IMAGES:
+        elif controller.state == AppState.PROCESSING_IMAGE:
             print('Processing images')
             sleep(5)
             controller.state = AppState.FINISHED

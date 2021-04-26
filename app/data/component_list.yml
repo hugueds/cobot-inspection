@@ -3,6 +3,11 @@ component_list:
   - number: '7500'
     sequence: 0
     poses:
+      - sequence: 0 # Waiting position
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.455, -2.034, -1.952, -0.666, 1.447, -1.972]
       - sequence: 1
         has_inspection: false
         speed: 0.5

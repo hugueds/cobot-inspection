@@ -1,11 +1,14 @@
+from typing import List
+
+
 class DAO:
 
     def __init__(self) -> None:
         pass
 
-    def get_parameters(self, popid):
+    def get_parameters(self, popid, component_number) -> List:
         query = 'SELECT'
-        pass
+        return []
 
     def get_parameters_full(self, popid):
         pass
@@ -13,3 +16,13 @@ class DAO:
     def save_results(self):
         query = 'INSERT INTO'
         pass
+
+
+
+"""
+
+{ component: 23123, params: [''] }
+    
+
+
+"""

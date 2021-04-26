@@ -66,13 +66,13 @@ class Cobot:
         pose = Pose()
         first_address = ModbusInterface.BASE_JOINT.value
         pose_array = self.__read_register(first_address, 6)        
-        pose.joint.base     = pose_array[0]
-        pose.joint.shoulder = pose_array[1]
-        pose.joint.elbow    = pose_array[2]
-        pose.joint.wrist_1  = pose_array[3]
-        pose.joint.wrist_2  = pose_array[4]
-        pose.joint.wrist_3  = pose_array[5]
-        self.pose.joint = pose.joint
+        pose.joints.base     = pose_array[0]
+        pose.joints.shoulder = pose_array[1]
+        pose.joints.elbow    = pose_array[2]
+        pose.joints.wrist_1  = pose_array[3]
+        pose.joints.wrist_2  = pose_array[4]
+        pose.joints.wrist_3  = pose_array[5]
+        self.pose.joints = pose.joints
         return pose
 
     def set_pose(self, pose: Pose):
@@ -123,10 +123,3 @@ class Cobot:
             sleep(1)
         else:
             logger.error('Modbus Interface Disconnected')
-      
-
-
-
-
-    def get_test(self):
-        return self.__read_register(200, 6)

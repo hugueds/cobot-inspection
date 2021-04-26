@@ -1,4 +1,5 @@
 from math import pi, trunc
+from typing import List
 
 class Joint:
     def __init__(self, base=0, shoulder=0, elbow=0, wrist_1=0, wrist_2=0, wrist_3=0) -> None:  
@@ -11,7 +12,7 @@ class Joint:
         self.wrist_3 = wrist_3
 
     def get_joint_list(self):
-        return list(self.joint.__dict__.values())
+        return list(self.__dict__.values())
 
     def convert_to_rad(self):
         joints = self.get_list()
@@ -29,13 +30,13 @@ class Joint:
         return [round(x * (180/pi), 2) for x in joints]
 
 class Pose(Joint):
-    def __init__(self, joint: Joint = Joint(), has_inspection=False, speed: float=0.1, acc:float=0.1):
-        self.joint = joint
+    def __init__(self, joints, speed: float=0.1, acc:float=0.1, has_inspection=False):
+        self.joints = Joint(joints[0], joints[1], joints[2], joints[3], joints[4], joints[5])
         self.has_inspection = has_inspection
         self.speed = speed
         self.acc = acc
 
-    def get_joint_list(self):
-        return self.joint.get_joint_list()
+    def get_joint_list(self) -> List:        
+        return self.joints.get_joint_list()
 
     

@@ -37,7 +37,7 @@ while controller.running:
             controller.set_state(AppState.LOADING_PARAMETERS)
 
     elif controller.state == AppState.LOADING_PARAMETERS:
-        controller.load_parameters()  # Check the parameters for ALL component units
+        controller.load_parameters()
         if controller.parameters_found:
             logger.info(f'Parameters loaded')
             controller.set_state(AppState.PARAMETER_LOADED)
@@ -45,99 +45,59 @@ while controller.running:
             logger.error(f'Parameters not found')
             controller.set_state(AppState.PARAMETER_NOT_FOUND)
 
-    elif controller.state == AppState.PARAMETER_LOADED:  # NEW
+    elif controller.state == AppState.PARAMETER_LOADED:
         first_component = controller.component_list[0]
         controller.start_job(first_component)
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_WAITING:
-        logger.info("Moving to Waiting...")                  
-
-        if controller.get_position_status() == PositionStatus.POSE:            
-            # Check the index of the Pose to ensure is not empty
-            if controller.component_index >= controller.total_components - 1:
+        logger.info("Moving to Waiting...")
+        if controller.get_position_status() == PositionStatus.POSE:
+            if controller.component_index >= controller.total_components:
                 controller.set_state(AppState.FINISHED)        
-            elif controller.total_poses > 0:
-                controller.next_pose()
-                controller.set_state(AppState.MOVING_TO_POSE)
-            else:
-                # Verify the amount of jobs remaining
+            elif controller.total_poses <= 0:
                 controller.job_done()
+            else:                
+                controller.next_pose()
+                controller.set_state(AppState.MOVING_TO_POSE)                
 
     elif controller.state == AppState.MOVING_TO_POSE:
-        logger.info("Moving to Pose...")
-        index = 0
+        logger.info("Moving to Pose...")        
         if controller.get_position_status() == PositionStatus.POSE:
-            # Check the index of the Pose            
-            if controller.pose_index > controller.total_poses:
+            if controller.pose_index >= controller.total_poses:
                 controller.job_done()
                 controller.set_state(AppState.MOVING_TO_WAITING)
             else:
-                if controller.component_list[index]['has_inspection']: # If current pose has a parameter por picture
-                    controller.set_state(AppState.COLLECTING_IMAGE)
+                if controller.check_inspection():
+                    controller.set_state(AppState.PROCESSING_IMAGE)
                 else:
                     controller.next_pose()
                     sleep(0.2)
                     controller.set_state(AppState.MOVING_TO_POSE)
 
+    elif controller.state == AppState.PROCESSING_IMAGE:
+        logger.info("Collecting Image")        
+        controller.process_image()
+        if controller.param_result: # Only move if the result match or someone request for it 
+            controller.next_pose()
+            controller.set_state(AppState.MOVING_TO_POSE)
+        else:
+            logger.warn('Parameter not matched, redoing operation')
+            sleep(1)
+
     elif controller.state == AppState.FINISHED:
         logger.info('All Component Jobs finished, Returning to Home Position')
-        # Generate Report
-        # Clear all variables
-        # print all next popids in the queue
+        # TODO: Generate Report        
+        # TODO: Log all next popids in the queue   
+        controller.set_home_pose()
+        controller.set_state(AppState.MOVING_TO_HOME)
+
+    elif controller.state == AppState.MOVING_TO_HOME:
+        if controller.get_position_status() == PositionStatus.POSE:
+            controller.set_state(AppState.WAITING_INPUT)        
+
+    elif controller.state == AppState.PARAMETER_NOT_FOUND:
         controller.set_state(AppState.WAITING_INPUT)
-
-    # elif controller.state == AppState.PARAMETER_LOADED: # OLD
-    #     controller.clear_folder()
-    #     controller.set_waiting_program()
-    #     controller.set_state(AppState.MOVING_TO_WAITING)
-
-    # elif controller.state == AppState.MOVING_TO_WAITING:
-    #     logger.info("Moving to Waiting...")
-    #     if controller.get_position_status() == PositionStatus.WAITING:
-    #         if controller.program_index < controller.total_programs:
-    #             controller.next_pose()
-    #             controller.set_state(AppState.MOVING_TO_POSE)
-    #         else:
-    #             controller.set_state(AppState.PROCESSING_IMAGES)
-
-    # elif controller.state == AppState.MOVING_TO_POSE:
-    #     logger.info("Moving to Pose...")
-    #     if controller.get_position_status() == PositionStatus.POSE:
-    #         controller.set_state(AppState.COLLECTING_IMAGE)
-
-    # elif controller.state == AppState.COLLECTING_IMAGE:
-    #     logger.info("Collecting and Saving Image")
-    #     controller.save_image()
-    #     controller.trigger_after_pose()
-    #     controller.set_state(AppState.MOVING_TO_AFTER_POSE)
-
-    # elif controller.state == AppState.MOVING_TO_AFTER_POSE:
-    #     logger.info("Moving to after pose...")
-    #     if controller.cobot.position_status == PositionStatus.AFTER_POSE:
-    #         controller.pose_times.append(datetime.now())
-    #         controller.set_waiting_program()
-    #         controller.set_state(AppState.MOVING_TO_WAITING)
-
-    # elif controller.state == AppState.PROCESSING_IMAGES:
-    #     logger.info('Start Processing the saved images')
-    #     controller.process_images()
-    #     controller.generate_report()
-    #     controller.set_state(AppState.WAITING_INPUT)
-
-    # elif controller.state == AppState.PARAMETER_NOT_FOUND:
-    #     controller.set_state(AppState.WAITING_INPUT)
 
     sleep(0.2)
 
-
-# def main():
-#     pass
-
-# if __name__ == "__main__":
-#     try:
-#         main()
-#     except Exception as e:
-#         logger.info("Finishing program due error")
-#         logger.info("Last State")
-#         logger.error(e)
