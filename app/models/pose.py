@@ -14,7 +14,7 @@ class Joint:
     def get_joint_list(self):
         return list(self.__dict__.values())
 
-    def convert_to_rad(self):
+    def convert_mrad2rad(self) -> List:
         joints = self.get_list()
         converted_joints = []
         mpi = trunc(pi * 1000)
@@ -25,12 +25,16 @@ class Joint:
             converted_joints.append(j)
         return converted_joints
 
+    def convert_rad2mrad(self):
+        joints = self.get_joint_list()
+        converted_joints = []        
+
     def convert_to_deg(self):
         joints = self.get_list()
         return [round(x * (180/pi), 2) for x in joints]
 
 class Pose(Joint):
-    def __init__(self, joints, speed: float=0.1, acc:float=0.1, has_inspection=False):
+    def __init__(self, joints, speed: int=1, acc: int =0, has_inspection=False):
         self.joints = Joint(joints[0], joints[1], joints[2], joints[3], joints[4], joints[5])
         self.has_inspection = has_inspection
         self.speed = speed

@@ -7,9 +7,7 @@ import sys
 
 c = Controller()
 
-first_component = c.component_list[0]
-
-c.start_job(first_component)
-
+c.connect_to_cobot()
+c.set_home_pose()
 
 

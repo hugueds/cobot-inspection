@@ -5,6 +5,7 @@ from time import sleep
 from pymodbus.client.sync import ModbusTcpClient
 from models import Pose, Joint
 from enumerables import ModbusInterface, PositionStatus, CobotStatus
+import itertools
 from logger import logger
 
 class Cobot:
@@ -78,8 +79,9 @@ class Cobot:
     def set_pose(self, pose: Pose):
         first_address = ModbusInterface.POSE_BASE.value
         joints = pose.get_joint_list()
-        pose_array = [joints, pose.speed, pose.acc]
-        self.__write_register(first_address, pose_array)
+        pose_array = joints
+
+        self.__write_register_array(first_address, pose_array)
         self.__write_register(ModbusInterface.SET_POSE.value, 1)
     
     def __read_register(self, address: int, count=1):
@@ -87,11 +89,18 @@ class Cobot:
             reg = self.modbus_client.read_holding_registers(address, count=count)
             return reg.registers
         except Exception as e:
-            logger.error(e)            
+            logger.error(e)    
 
-    def __write_register(self, address: int, values):
-        try:
+
+    def __write_register_array(self, address: int, values):
+        try:            
             self.modbus_client.write_registers(address, values)
+        except Exception as e:            
+            logger.error(e)        
+
+    def __write_register(self, address: int, value):
+        try:
+            self.modbus_client.write_register(address, value)
         except Exception as e:            
             logger.error(e)
 

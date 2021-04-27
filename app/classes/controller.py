@@ -20,7 +20,8 @@ from logger import logger
 from database import DAO
 
 
-HOME_JOINTS = [0,0,0,0,0,0]
+HOME_JOINTS = [-1.582, -1.261, -2.269, -1.107, 1.588, 0]
+HOME_JOINTS = [1000,1000,1000,1000,1000, 0]
 PRG_WAITING = 0
 PRG_HOME = 99
 AFTERPOSE_TRIGGER = 2
@@ -64,7 +65,7 @@ class Controller:
         self.debug = debug        
         self.load_component_list()
         self.barcode.start()        
-        self.display_info()
+        # self.display_info()
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
 
     def load_component_list(self):
@@ -152,7 +153,7 @@ class Controller:
             self.cobot.set_pose(pose)
 
     def set_home_pose(self):
-        home_pose = Pose(HOME_JOINTS)
+        home_pose = Pose(HOME_JOINTS, speed=1, acc=1)
         self.cobot.set_pose(home_pose)
 
     def set_state(self, state: AppState):
@@ -172,19 +173,18 @@ class Controller:
         info = CameraInfo()
 
         while self.running:
-            info.state = self.state.name
+            # info.state = self.state.name
+            # info.parameter = self.parameter
+            # info.program = str(self.program)
+            # info.program_index = str(self.program_index)
+            # info.total_programs = str(self.total_programs)
+            # info.life_beat_cobot = str(self.cobot.life_beat)
+            # info.manual = str(self.manual_mode)
 
-            info.parameter = self.parameter
-            info.program = str(self.program)
-            info.program_index = str(self.program_index)
-            info.total_programs = str(self.total_programs)
-            info.life_beat_cobot = str(self.cobot.life_beat)
-            info.manual = str(self.manual_mode)
-
-            # Create a class with all kind of images
-            info.message = '[INFO] Message Test'
-            info.predictions = self.predictions
-            info.results = self.results
+            # # Create a class with all kind of images
+            # info.message = '[INFO] Message Test'
+            # info.predictions = self.predictions
+            # info.results = self.results
 
             if self.job:
                 info.cu = self.job.component_unit
