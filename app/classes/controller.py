@@ -17,7 +17,7 @@ from classes.tf_predictor import TFPredictor
 from models import CameraInfo, Prediction, Job, Component, prediction
 from enumerables import CobotStatus, OperationResult
 from logger import logger
-from database import DAO
+from database.dao import DAO
 
 
 HOME_JOINTS = [-1.582, -1.261, -2.269, -1.107, 1.588, 0]
@@ -64,18 +64,19 @@ class Controller:
         self.load_component_list()
         self.barcode.start()        
         self.display_info()
+        
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
 
     def load_component_list(self):
+        logger.info('Loading Component List')
         with open('data/component_list.yml') as f:
-            logger.info('Loading Component List')
             component_list = yaml.safe_load(f)['component_list']
-            component_list = sorted(component_list, key=lambda x: x['sequence'])
-            self.component_list = component_list
-            self.component_index = 0
-            self.total_components = len(self.component_list)
-            logger.info(f"Components Loaded: {[x['number'] for x in component_list]}")
-            # Convert component_list to Class of Components
+        component_list = sorted(component_list, key=lambda x: x['sequence'])
+        self.component_list = component_list
+        self.component_index = 0
+        self.total_components = len(self.component_list)
+        logger.info(f"Components Loaded: {[x['number'] for x in component_list]}")
+        # Convert component_list to Class of Components
 
     def connect_to_cobot(self):
         self.cobot.connect()
@@ -104,14 +105,15 @@ class Controller:
         # TODO Flag de loading para nao rodar duas vezes as consultas
         logger.info(f"Collecting parameters for POPID {self.popid}")        
         # Print all Component Units Found on Database        
-        self.job.parameter_list = self.get_parameter_list(self.popid, debug=True, index=0)
-        # self.parameters_found = True
-        # self.parameter = self.parameter_list[0]
+        self.parameter_list = self.dao.get_fake_parameters(self.popid)        
+        if len(self.parameter_list):
+            self.parameters_found = True            
 
     def start_job(self, component_unit):
         # TODO: Log the component loaded
         self.job = Job(self.popid, component_unit['number'])
         self.selected_component = list(filter(lambda x: x['number'] == component_unit['number'], self.component_list))[0]
+        self.job.parameter_list = list(filter(lambda x: x['number'] == component_unit['number'], self.parameter_list))[0]
         self.tf_predictor.load_single_model(component_unit['number'])
         self.job.status = 1 # Create a enumerable for jobs
         self.pose_index = 0
@@ -261,6 +263,7 @@ class Controller:
             logger.info('[COMMAND] Closing the camera and quiting application')
             self.camera.stop()
             self.running = False
+            exit()
         elif e.name.isdigit() and self.manual_mode:
             logger.info('[COMMAND] Set Manual Program ' + e.name)
             self.set_program(int(e.name))
@@ -272,10 +275,17 @@ class Controller:
             self.camera.save_screenshot(str(self.program))
         elif e.name == 'n':
             logger.info('[COMMAND] New Flag')
+            self.popid = '999999'
             self.flag_new_product = True
         elif e.name == 'z':
             logger.info('[COMMAND] Classifing Image...')
             self.classify()
+        elif e.name == 'o':
+            logger.info('[COMMAND] Simulate OK Inspection')
+            self.param_result = True
+        elif e.name == 'x': 
+            logger.info('[COMMAND] Simulate Bypass Button')
+            
 
     def get_cobot_status(self):
         return self.cobot.status

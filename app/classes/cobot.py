@@ -75,9 +75,9 @@ class Cobot:
     def set_pose(self, pose: Pose):
         first_address = ModbusInterface.POSE_BASE.value
         joints = pose.joints.convert_rad2mrad()
-        pose_array = joints
+        pose_array = joints.copy()
         pose_array.append(int(pose.acc)   * 1000)
-        pose_array.append(int(pose.speed) * 1000)
+        pose_array.append(int(pose.speed) * 1000)        
         self.__write_register_array(first_address, pose_array)
         self.__write_register(ModbusInterface.SET_POSE.value, 1)
 

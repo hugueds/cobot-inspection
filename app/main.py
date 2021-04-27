@@ -39,7 +39,7 @@ while controller.running:
     elif controller.state == AppState.LOADING_PARAMETERS:
         controller.load_parameters()
         if controller.parameters_found:
-            logger.info(f'Parameters loaded')
+            logger.info(f'Parameters loaded for this Popid')
             controller.set_state(AppState.PARAMETER_LOADED)
         else:
             logger.error(f'Parameters not found')
@@ -54,15 +54,15 @@ while controller.running:
         logger.info("Moving to Waiting...")
         if controller.get_position_status() == PositionStatus.POSE:
             if controller.component_index >= controller.total_components:
-                controller.set_state(AppState.FINISHED)        
+                controller.set_state(AppState.FINISHED)
             elif controller.total_poses <= 0:
                 controller.job_done()
-            else:                
+            else:
                 controller.next_pose()
-                controller.set_state(AppState.MOVING_TO_POSE)                
+                controller.set_state(AppState.MOVING_TO_POSE)
 
     elif controller.state == AppState.MOVING_TO_POSE:
-        logger.info("Moving to Pose...")        
+        logger.info("Moving to Pose...")
         if controller.get_position_status() == PositionStatus.POSE:
             if controller.pose_index >= controller.total_poses:
                 controller.job_done()
@@ -76,9 +76,9 @@ while controller.running:
                     controller.set_state(AppState.MOVING_TO_POSE)
 
     elif controller.state == AppState.PROCESSING_IMAGE:
-        logger.info("Collecting Image")        
+        logger.info("Collecting Image")
         controller.process_image()
-        if controller.param_result: # Only move if the result match or someone request for it 
+        if controller.param_result:  # Only move if the result match or someone request for it
             controller.next_pose()
             controller.set_state(AppState.MOVING_TO_POSE)
         else:
@@ -87,17 +87,16 @@ while controller.running:
 
     elif controller.state == AppState.FINISHED:
         logger.info('All Component Jobs finished, Returning to Home Position')
-        # TODO: Generate Report        
-        # TODO: Log all next popids in the queue   
+        # TODO: Generate Report
+        # TODO: Log all next popids in the queue
         controller.set_home_pose()
         controller.set_state(AppState.MOVING_TO_HOME)
 
     elif controller.state == AppState.MOVING_TO_HOME:
         if controller.get_position_status() == PositionStatus.POSE:
-            controller.set_state(AppState.WAITING_INPUT)        
+            controller.set_state(AppState.WAITING_INPUT)
 
     elif controller.state == AppState.PARAMETER_NOT_FOUND:
         controller.set_state(AppState.WAITING_INPUT)
 
     sleep(0.2)
-

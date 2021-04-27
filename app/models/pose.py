@@ -60,8 +60,9 @@ class Pose(Joints):
 
 
 if __name__ == '__main__':
-    j = Pose([4693, 5567, 3881, 4856, 1542, 6279])
+    j = Pose([3500, 5567, 3881, 4856, 1542, 6279])
     a = Joints.convert_mrad2rad_s(j.get_joint_list())
+    print(a)
     
     
     

@@ -1,5 +1,5 @@
 from typing import List
-
+import yaml
 
 class DAO:
 
@@ -10,6 +10,12 @@ class DAO:
         query = 'SELECT'
         return []
 
+    def get_fake_parameters(self, popid) -> List:
+        with open('data/mock_request.yml') as f:
+            r = yaml.safe_load(f)['data']        
+        params = list(filter(lambda x: x['popid'] == popid, r))[0]
+        return params['components']
+
     def get_parameters_full(self, popid):
         pass
 
@@ -18,11 +24,7 @@ class DAO:
         pass
 
 
-
-"""
-
-{ component: 23123, params: [''] }
-    
-
-
-"""
+if __name__ == '__main__':
+    d = DAO()
+    p = d.get_fake_parameters('111111')
+    print(p['components'])
