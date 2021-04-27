@@ -1,5 +1,5 @@
 from classes.barcode_scanner import BarcodeScanner
-from models.pose import Pose, Joint
+from models.pose import Pose, Joints
 from enumerables.app_state import AppState
 from time import sleep
 from classes import Controller, Cobot

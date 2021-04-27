@@ -1,9 +1,11 @@
 from math import pi, trunc
+from os import stat
 from typing import List
 
-class Joint:
-    def __init__(self, base=0, shoulder=0, elbow=0, wrist_1=0, wrist_2=0, wrist_3=0) -> None:  
-        # TODO Validar se numero é maior que -6.282 
+
+class Joints:
+    def __init__(self, base=0, shoulder=0, elbow=0, wrist_1=0, wrist_2=0, wrist_3=0) -> None:
+        # TODO Validar se numero é maior que -6.282
         self.base = base
         self.shoulder = shoulder
         self.elbow = elbow
@@ -11,36 +13,55 @@ class Joint:
         self.wrist_2 = wrist_2
         self.wrist_3 = wrist_3
 
-    def get_joint_list(self):
+    def get_joint_list(self) -> List:
         return list(self.__dict__.values())
 
-    def convert_mrad2rad(self) -> List:
-        joints = self.get_list()
+    @staticmethod
+    def convert_mrad2rad_s(joints) -> List:
         converted_joints = []
         mpi = trunc(pi * 1000)
         for j in joints:
             if j > mpi:
-                j = - ( 2 * mpi - j)
-            j = j / 1000             
+                j = - (2 * mpi - j)
+            j = j / 1000
             converted_joints.append(j)
         return converted_joints
 
-    def convert_rad2mrad(self):
+    def convert_mrad2rad(self) -> List:
         joints = self.get_joint_list()
-        converted_joints = []        
+        return Joints.convert_mrad2rad_s(joints)       
 
-    def convert_to_deg(self):
+    def convert_rad2mrad(self) -> List:
+        joints = self.get_joint_list()
+        converted_joints = []
+        mpi = trunc(pi * 1000)
+        for j in joints:
+            j = j * 1000
+            if j < 0:
+                j = j + mpi * 2
+            converted_joints.append(int(j))
+        return converted_joints
+
+    def convert_rad2deg(self):
         joints = self.get_list()
         return [round(x * (180/pi), 2) for x in joints]
 
-class Pose(Joint):
-    def __init__(self, joints, speed: int=1, acc: int =0, has_inspection=False):
-        self.joints = Joint(joints[0], joints[1], joints[2], joints[3], joints[4], joints[5])
+
+class Pose(Joints):
+    def __init__(self, joints, speed: float = 1, acc: float = 0, has_inspection=False):
+        j = joints
+        self.joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
         self.has_inspection = has_inspection
         self.speed = speed
         self.acc = acc
 
-    def get_joint_list(self) -> List:        
+    def get_joint_list(self) -> List:
         return self.joints.get_joint_list()
 
+
+if __name__ == '__main__':
+    j = Pose([4693, 5567, 3881, 4856, 1542, 6279])
+    a = Joints.convert_mrad2rad_s(j.get_joint_list())
+    
+    
     

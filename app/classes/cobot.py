@@ -3,15 +3,16 @@ import yaml
 from threading import Thread
 from time import sleep
 from pymodbus.client.sync import ModbusTcpClient
-from models import Pose, Joint
+from models import Pose, Joints
 from enumerables import ModbusInterface, PositionStatus, CobotStatus
 import itertools
 from logger import logger
 
+
 class Cobot:
 
     status = CobotStatus.NONE
-    pose: Pose
+    joints = Joints()
     life_beat = -1
     move_status = 0
     modbus_client = None
@@ -23,12 +24,12 @@ class Cobot:
 
     pose_seconds = 0
     job_seconds = 0
-    thread_running = True    
+    thread_running = True
     home_program = 99
 
     trigger = 0
 
-    def __init__(self, config_path='config.yml', ip:str = '', port:int = 0) -> None:
+    def __init__(self, config_path='config.yml', ip: str = '', port: int = 0) -> None:
         if ip != '' and port != 0:
             self.ip = ip
             self.port = port
@@ -36,17 +37,18 @@ class Cobot:
             with open(config_path, 'r') as file:
                 config = yaml.safe_load(file)
             self.ip = config['cobot']['ip']
-            self.port = int(config['cobot']['modbus_port'])        
+            self.port = int(config['cobot']['modbus_port'])
 
     def connect(self):
         try:
-            logger.info(f'Robot {self.ip} trying to connect')  # Replace with log
+            # Replace with log
+            logger.info(f'Robot {self.ip} trying to connect')
             self.modbus_client = ModbusTcpClient(self.ip, self.port)
         except Exception as e:
             return logger.error(e)
 
     def disconnect(self):
-        self.modbus_client.close()    
+        self.modbus_client.close()
 
     def set_program(self, program: int):
         self.selected_program = program
@@ -57,51 +59,45 @@ class Cobot:
         trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
         if value != trigger:
             self.trigger = value
-            self.__write_register(ModbusInterface.START_TRIGGER.value, value)    
+            self.__write_register(ModbusInterface.START_TRIGGER.value, value)
 
     def move_to_waiting(self):
         self.selected_program = 0
         self.set_program(self.selected_program)
 
-    def get_pose(self) -> Pose:
-        pose = Pose()
+    def get_pose(self) -> Joints:
         first_address = ModbusInterface.BASE_JOINT.value
-        pose_array = self.__read_register(first_address, 6)        
-        pose.joints.base     = pose_array[0]
-        pose.joints.shoulder = pose_array[1]
-        pose.joints.elbow    = pose_array[2]
-        pose.joints.wrist_1  = pose_array[3]
-        pose.joints.wrist_2  = pose_array[4]
-        pose.joints.wrist_3  = pose_array[5]
-        self.pose.joints = pose.joints
-        return pose
+        pose_array = self.__read_register(first_address, 6)
+        j = Joints.convert_mrad2rad_s(pose_array)
+        self.joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
+        return self.joints
 
     def set_pose(self, pose: Pose):
         first_address = ModbusInterface.POSE_BASE.value
-        joints = pose.get_joint_list()
+        joints = pose.joints.convert_rad2mrad()
         pose_array = joints
-
+        pose_array.append(int(pose.acc)   * 1000)
+        pose_array.append(int(pose.speed) * 1000)
         self.__write_register_array(first_address, pose_array)
         self.__write_register(ModbusInterface.SET_POSE.value, 1)
-    
+
     def __read_register(self, address: int, count=1):
         try:
             reg = self.modbus_client.read_holding_registers(address, count=count)
             return reg.registers
         except Exception as e:
-            logger.error(e)    
-
+            logger.error(e)
 
     def __write_register_array(self, address: int, values):
-        try:            
+        try:
             self.modbus_client.write_registers(address, values)
-        except Exception as e:            
-            logger.error(e)        
+        except Exception as e:
+            logger.error(e)
 
     def __write_register(self, address: int, value):
         try:
             self.modbus_client.write_register(address, value)
-        except Exception as e:            
+        except Exception as e:
             logger.error(e)
 
     def read_interface(self):
@@ -117,8 +113,8 @@ class Cobot:
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
         self.__write_register(ModbusInterface.LIFE_BEAT.value, self.life_beat)
         self.__write_register(ModbusInterface.PROGRAM_STATE.value, state)
-    
-    def start_read_thread(self):         
+
+    def start_read_thread(self):
         self.thread_running = True
         self.thread = Thread(target=self.read_interface_2, daemon=True)
         self.thread.start()
@@ -126,7 +122,7 @@ class Cobot:
     def stop_thread(self):
         self.thread_running = False
 
-    def read_interface_2(self):        
+    def read_interface_2(self):
         while self.thread_running and self.modbus_client.is_socket_open:
             self.read_interface()
             sleep(1)

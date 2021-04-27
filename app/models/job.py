@@ -8,4 +8,5 @@ class Job:
     component_unit: str = ''
     status: int = 0
     parameter_list = []
+    results = []
     start_time: datetime = datetime.now()

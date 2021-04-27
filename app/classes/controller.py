@@ -1,4 +1,4 @@
-from models.pose import Joint, Pose
+from models.pose import Joints, Pose
 import os
 import json
 import yaml
@@ -21,11 +21,9 @@ from database import DAO
 
 
 HOME_JOINTS = [-1.582, -1.261, -2.269, -1.107, 1.588, 0]
-HOME_JOINTS = [1000,1000,1000,1000,1000, 0]
 PRG_WAITING = 0
 PRG_HOME = 99
 AFTERPOSE_TRIGGER = 2
-
 
 class Controller:
 
@@ -65,7 +63,7 @@ class Controller:
         self.debug = debug        
         self.load_component_list()
         self.barcode.start()        
-        # self.display_info()
+        self.display_info()
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
 
     def load_component_list(self):
@@ -122,7 +120,7 @@ class Controller:
         self.total_poses = len(self.selected_component['poses'])
         pose = self.get_pose(component_unit, self.pose_index)
         self.cobot.set_pose(pose)
-        logger.info(f'Job for component {self.selected_component["number"]} started')
+        logger.info(f"Job for component {self.selected_component['number']} started")
     
     def job_done(self):
         self.job.status = 2 # Create a enumerable for jobs
@@ -167,35 +165,6 @@ class Controller:
             sleep(0.2)  # TODO Get via config
         else:
             logger.error('Cobot Data Update has stopped')
-
-    def update_camera_interface(self):
-        logger.info('Starting Camera Update Interface')
-        info = CameraInfo()
-
-        while self.running:
-            # info.state = self.state.name
-            # info.parameter = self.parameter
-            # info.program = str(self.program)
-            # info.program_index = str(self.program_index)
-            # info.total_programs = str(self.total_programs)
-            # info.life_beat_cobot = str(self.cobot.life_beat)
-            # info.manual = str(self.manual_mode)
-
-            # # Create a class with all kind of images
-            # info.message = '[INFO] Message Test'
-            # info.predictions = self.predictions
-            # info.results = self.results
-
-            if self.job:
-                info.cu = self.job.component_unit
-                info.popid = self.job.popid
-                info.parameters = self.job.parameter_list
-                jt = str((datetime.now() - self.job.start_time).seconds)
-                info.jobtime = jt
-                ut = str((datetime.now() - self.start_datetime).seconds)
-                info.uptime = ut
-
-            self.camera.display_info(info)
 
     def clear_folder(self):
         folder = self.camera.image_folder
@@ -332,3 +301,30 @@ class Controller:
         if popid:
             self.popid = popid
             self.flag_new_product = True
+
+    def update_camera_interface(self):
+        logger.info('Starting Camera Update Interface')
+        info = CameraInfo()
+
+        while self.running:
+            info.state = self.state.name
+            info.cobot_status = self.cobot.status.name
+            info.parameter = self.parameter         
+            info.life_beat_cobot = str(self.cobot.life_beat)
+            info.manual = str(self.manual_mode)
+            # # Create a class with all kind of images
+            info.message = '[INFO] Message Test'
+            info.joints = str(self.cobot.joints.get_joint_list())            
+            # info.results = self.results
+            ut = str((datetime.now() - self.start_datetime).seconds)                
+            info.uptime = ut
+            if self.job:
+                info.component_unit = self.job.component_unit
+                info.popid = self.job.popid
+                info.parameters = self.job.parameter_list
+                jt = str((datetime.now() - self.job.start_time).seconds)
+                info.jobtime = jt                
+
+            self.camera.display_info(info)
+        else: 
+            logger.error('Error on display program info')
