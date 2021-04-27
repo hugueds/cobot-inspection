@@ -30,7 +30,7 @@ class Controller:
     state: AppState = AppState.INITIAL
     operation_result: OperationResult = OperationResult.NONE
     job: Job = None
-    dao: DAO()
+    dao = DAO()
     barcode = BarcodeScanner()
     cobot = Cobot()
     camera = Camera()
