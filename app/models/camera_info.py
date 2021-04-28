@@ -8,9 +8,10 @@ from dataclasses import dataclass
 @dataclass
 class CameraInfo:
     state: str = ''
-    cobot_status: str = ''
-    component_unit: str = ''
     popid: str = ''
+    component_unit: str = ''
+    cobot_status: str = ''
+    position_status: str = ''
     parameter: str = ''
     life_beat_cobot: str = ''
     manual: str = ''
@@ -22,3 +23,9 @@ class CameraInfo:
     predictions = ''
     results = ''
     joints = ''
+    component_index = ''
+    component_total = ''
+    parameter_index = ''
+    parameter_total = ''
+    pose_index = ''
+    pose_total = ''

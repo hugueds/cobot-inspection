@@ -119,16 +119,16 @@ class Controller:
         self.param_result = False
         self.predictions = []
         self.total_poses = len(self.selected_component['poses'])
-        self.next_pose()
         logger.info(f"Job for component {self.selected_component['number']} started, number of poses = {self.total_poses}")        
     
     def job_done(self):
+        print('JOB DONE')
         # TODO: Create a report using the job results
         self.job.status = 2 # Create a enumerable for jobs
+        self.component_index = self.component_index + 1
         if self.component_index < self.total_components - 1:
-            self.component_index = self.component_index + 1
-            component = self.component_list[self.component_index]
-            self.start_job(component)
+            self.selected_component = self.component_list[self.component_index]
+            self.start_job(self.selected_component['number'])
 
     def abort_job(self):
         # TODO Send Stop Signal to Cobot
@@ -146,9 +146,9 @@ class Controller:
         return self.selected_component['poses'][index]['has_inspection']
 
     def next_pose(self):
-        self.param_result = False
-        if self.pose_index < self.total_poses - 1:
-            self.pose_index = self.pose_index + 1
+        self.param_result = False   
+        self.pose_index = self.pose_index + 1    
+        if self.pose_index < self.total_poses - 1:            
             logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')
             pose = self.get_pose(self.selected_component, self.pose_index)
             self.cobot.set_pose(pose)
@@ -328,10 +328,16 @@ class Controller:
             # info.results = self.results
             ut = str((datetime.now() - self.start_datetime).seconds)                
             info.uptime = ut
+            info.component_index = str(self.component_index)
+            info.component_total = str(self.total_components)
+            info.pose_index = str(self.pose_index + 1)
+            info.pose_total = str(self.total_poses)
             if self.job:
                 info.component_unit = self.job.component_unit
                 info.popid = self.job.popid
                 info.parameters = self.job.parameter_list
+                info.parameter_index = str(self.param_index + 1)
+                info.parameter_total = str(self.total_param)
                 jt = str((datetime.now() - self.job.start_time).seconds)
                 info.jobtime = jt                
 
