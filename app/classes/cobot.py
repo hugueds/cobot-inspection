@@ -1,11 +1,9 @@
-from logging import log
 import yaml
 from threading import Thread
 from time import sleep
 from pymodbus.client.sync import ModbusTcpClient
 from models import Pose, Joints
 from enumerables import ModbusInterface, PositionStatus, CobotStatus
-import itertools
 from logger import logger
 
 
@@ -22,8 +20,7 @@ class Cobot:
 
     position_status = PositionStatus.NOT_DEFINED
 
-    pose_seconds = 0
-    job_seconds = 0
+    pose_seconds = 0    
     thread_running = True
     home_program = 99
 
@@ -40,14 +37,14 @@ class Cobot:
             self.port = int(config['cobot']['modbus_port'])
 
     def connect(self):
-        try:
-            # Replace with log
-            logger.info(f'Robot {self.ip} trying to connect')
+        try:            
+            logger.info(f'Trying to connect to Cobot with address: {self.ip}')
             self.modbus_client = ModbusTcpClient(self.ip, self.port)
         except Exception as e:
             return logger.error(e)
 
     def disconnect(self):
+        logger.info(f'Closing connection')
         self.modbus_client.close()
 
     def set_program(self, program: int):
@@ -69,8 +66,9 @@ class Cobot:
         first_address = ModbusInterface.BASE_JOINT.value
         pose_array = self.__read_register(first_address, 6)
         j = Joints.convert_mrad2rad_s(pose_array)
-        self.joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
-        return self.joints
+        joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
+        self.joints = joints
+        return joints
 
     def set_pose(self, pose: Pose):
         first_address = ModbusInterface.POSE_BASE.value
@@ -107,7 +105,7 @@ class Cobot:
         self.status = CobotStatus(0) if status is None else CobotStatus(status[0])
         self.position_status = PositionStatus(0) if position_status is None else PositionStatus(position_status[0])
         self.running_program = 0 if running_program is None else running_program
-        # self.move_status = PositionStatus(self.__read_register(ModbusInterface.MOVE_STATUS.value))
+        self.get_pose()        
 
     def update_interface(self, state: int):
         self.life_beat = self.life_beat + 1 if self.life_beat <= 1000 else 0
@@ -116,13 +114,13 @@ class Cobot:
 
     def start_read_thread(self):
         self.thread_running = True
-        self.thread = Thread(target=self.read_interface_2, daemon=True)
+        self.thread = Thread(target=self.read_interface_instance, daemon=True)
         self.thread.start()
 
     def stop_thread(self):
         self.thread_running = False
 
-    def read_interface_2(self):
+    def read_interface_instance(self):
         while self.thread_running and self.modbus_client.is_socket_open:
             self.read_interface()
             sleep(1)

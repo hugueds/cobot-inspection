@@ -8,14 +8,12 @@ class Modbus:
         self.client = ModbusTcpClient(ip, port)
         self.start_read = start_read
         self.end_read = end_read
-        self.start_write = start_write
-        
+        self.start_write = start_write        
 
     def read_values(self): # Returns an array of values from a start point        
         return self.__read_register(self.start_read, self.start_read - self.end_read)
 
     def write_values(self, values):        
-        
         self.write_values(self.start_write, values)
 
     def __read_register(self, address, count=1):

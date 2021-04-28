@@ -33,6 +33,7 @@ while controller.running:
     elif controller.state == AppState.WAITING_INPUT:
         controller.wait_new_product()
         if controller.flag_new_product:
+            controller.set_home_pose()
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
 
@@ -47,7 +48,7 @@ while controller.running:
 
     elif controller.state == AppState.PARAMETER_LOADED:
         first_component = controller.component_list[0]
-        controller.start_job(first_component)
+        controller.start_job(first_component['number'])
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_WAITING:

@@ -14,7 +14,7 @@ from classes.barcode_scanner import BarcodeScanner
 from classes.camera import Camera
 from classes.cobot import Cobot
 from classes.tf_predictor import TFPredictor        
-from models import CameraInfo, Prediction, Job, Component, prediction
+from models import CameraInfo, Prediction, Job, Component
 from enumerables import CobotStatus, OperationResult
 from logger import logger
 from database.dao import DAO
@@ -63,33 +63,30 @@ class Controller:
         self.debug = debug        
         self.load_component_list()
         self.barcode.start()        
-        self.display_info()
-        
+        self.display_info()        
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
 
     def load_component_list(self):
-        logger.info('Loading Component List')
+        logger.info('Loading List for Component Poses')
         with open('data/component_list.yml') as f:
             component_list = yaml.safe_load(f)['component_list']
         component_list = sorted(component_list, key=lambda x: x['sequence'])
         self.component_list = component_list
         self.component_index = 0
         self.total_components = len(self.component_list)
-        logger.info(f"Components Loaded: {[x['number'] for x in component_list]}")
-        # Convert component_list to Class of Components
+        logger.info(f"Components Loaded: {[x['number'] for x in component_list]}, Total: {self.total_components}")
+        # Convert component_list to Class of Components and Poses
 
     def connect_to_cobot(self):
         self.cobot.connect()
-        self.thread_cobot = Thread(
-            target=self.update_cobot_interface, daemon=True)
+        self.thread_cobot = Thread(target=self.update_cobot_interface, daemon=True)
         self.thread_cobot.start()
 
     def start_camera(self):
         self.camera.start()
 
     def display_info(self):
-        self.thread_camera = Thread(
-            target=self.update_camera_interface, args=(), daemon=True)
+        self.thread_camera = Thread(target=self.update_camera_interface, args=(), daemon=True)
         self.thread_camera.start()
 
     def new_product(self):
@@ -109,47 +106,51 @@ class Controller:
         if len(self.parameter_list):
             self.parameters_found = True            
 
-    def start_job(self, component_unit):
+    def start_job(self, component_number):
         # TODO: Log the component loaded
-        self.job = Job(self.popid, component_unit['number'])
-        self.selected_component = list(filter(lambda x: x['number'] == component_unit['number'], self.component_list))[0]
-        self.job.parameter_list = list(filter(lambda x: x['number'] == component_unit['number'], self.parameter_list))[0]
-        self.tf_predictor.load_single_model(component_unit['number'])
+        self.selected_component = list(filter(lambda x: x['number'] == component_number, self.component_list))[0]
+        self.job = Job(self.popid, component_number)
+        params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
+        self.job.parameter_list = params
+        # self.tf_predictor.load_single_model(component_number)
         self.job.status = 1 # Create a enumerable for jobs
         self.pose_index = 0
         self.param_index = 0
+        self.param_result = False
         self.predictions = []
         self.total_poses = len(self.selected_component['poses'])
-        pose = self.get_pose(component_unit, self.pose_index)
-        self.cobot.set_pose(pose)
-        logger.info(f"Job for component {self.selected_component['number']} started")
+        self.next_pose()
+        logger.info(f"Job for component {self.selected_component['number']} started, number of poses = {self.total_poses}")        
     
     def job_done(self):
+        # TODO: Create a report using the job results
         self.job.status = 2 # Create a enumerable for jobs
-        # TODO: Create a report using the job results        
         if self.component_index < self.total_components - 1:
             self.component_index = self.component_index + 1
             component = self.component_list[self.component_index]
             self.start_job(component)
 
     def abort_job(self):
+        # TODO Send Stop Signal to Cobot
         self.job.status = 3 # Create a enumerable for jobs     
 
-    def get_pose(self, component_unit, index) -> Pose:        
-        pose_array = component_unit['poses'][index]        
+    def get_pose(self, component_unit, index) -> Pose:
+        # print(component_unit)
+        pose_array = component_unit['poses'][index]  
+        print(pose_array)      
         pose = Pose(pose_array['joints'], speed=pose_array['speed'], acc=pose_array['acc'])        
         return pose
         
     def check_inspection(self):
-        index = self.component_index
-        return self.component_list[index]['has_inspection']
+        index = self.pose_index
+        return self.selected_component['poses'][index]['has_inspection']
 
-    def next_pose(self): # NEW:
-        self.param_result = False        
+    def next_pose(self):
+        self.param_result = False
         if self.pose_index < self.total_poses - 1:
             self.pose_index = self.pose_index + 1
             logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')
-            pose = self.get_pose(self, self.pose_index)
+            pose = self.get_pose(self.selected_component, self.pose_index)
             self.cobot.set_pose(pose)
 
     def set_home_pose(self):
@@ -286,7 +287,6 @@ class Controller:
         elif e.name == 'x': 
             logger.info('[COMMAND] Simulate Bypass Button')
             
-
     def get_cobot_status(self):
         return self.cobot.status
 
@@ -295,11 +295,11 @@ class Controller:
 
     def check_cobot_status(self):
         status = True
-        if self.cobot.status == CobotStatus.EMERGENCY_STOPPED.value:
+        if self.cobot.status.value == CobotStatus.EMERGENCY_STOPPED.value:
             logger.warning(
                 f"Cobot is under Emergency Stop... Status: {self.cobot.status}")
             status = False
-        elif self.cobot.status != CobotStatus.RUNNING.value:
+        elif self.cobot.status.value != CobotStatus.RUNNING.value:
             logger.warning(
                 f"Cobot is not ready for work... Status: {self.cobot.status}")
             status = False

@@ -1,7 +1,4 @@
 from math import pi, trunc
-from os import stat
-from typing import List
-
 
 class Joints:
     def __init__(self, base=0, shoulder=0, elbow=0, wrist_1=0, wrist_2=0, wrist_3=0) -> None:
@@ -13,11 +10,11 @@ class Joints:
         self.wrist_2 = wrist_2
         self.wrist_3 = wrist_3
 
-    def get_joint_list(self) -> List:
+    def get_joint_list(self) -> list:
         return list(self.__dict__.values())
 
     @staticmethod
-    def convert_mrad2rad_s(joints) -> List:
+    def convert_mrad2rad_s(joints) -> list:
         converted_joints = []
         mpi = trunc(pi * 1000)
         for j in joints:
@@ -27,11 +24,11 @@ class Joints:
             converted_joints.append(j)
         return converted_joints
 
-    def convert_mrad2rad(self) -> List:
+    def convert_mrad2rad(self) -> list:
         joints = self.get_joint_list()
         return Joints.convert_mrad2rad_s(joints)       
 
-    def convert_rad2mrad(self) -> List:
+    def convert_rad2mrad(self) -> list:
         joints = self.get_joint_list()
         converted_joints = []
         mpi = trunc(pi * 1000)
@@ -42,7 +39,7 @@ class Joints:
             converted_joints.append(int(j))
         return converted_joints
 
-    def convert_rad2deg(self):
+    def convert_rad2deg(self) -> list:
         joints = self.get_list()
         return [round(x * (180/pi), 2) for x in joints]
 
@@ -55,7 +52,7 @@ class Pose(Joints):
         self.speed = speed
         self.acc = acc
 
-    def get_joint_list(self) -> List:
+    def get_joint_list(self) -> list:
         return self.joints.get_joint_list()
 
 

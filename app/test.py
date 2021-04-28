@@ -1,3 +1,4 @@
+from models.component import Component
 from enumerables.position_status import PositionStatus
 from enumerables.cobot_status import CobotStatus
 from classes.barcode_scanner import BarcodeScanner
@@ -7,13 +8,15 @@ from time import sleep
 from classes import Controller, Cobot
 
 
-c = Controller()
+# c = Controller()
 
-c.connect_to_cobot()
-c.set_home_pose()
+# c.popid = '999999'
 
-index = 0
-poses = c.component_list[0]['poses']
-total_poses = len(poses) 
+# c.load_parameters()
 
-c.load_parameters()
+# print(c.parameter_list)
+
+# c.start_job('7500')
+
+# co = Component('1', 0, [[1,2,3,4,5,6], [9,9,9,9,9,9]])
+# print(co.poses[0].get_joint_list())

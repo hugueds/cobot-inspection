@@ -1,10 +1,13 @@
-from typing import List
 from dataclasses import dataclass
-from models.pose import Pose
+from typing import List
+from models import Pose
 
 @dataclass
 class Component:
-    number: int
-    component_unit: str
-    sequence: int
-    poses: List[Pose]
+    number: str    
+    sequence: int    
+
+    def __init__(self, number, sequence, poses) -> None:
+        self.number = number
+        self.sequence = sequence
+        self.poses = [Pose(x) for x in poses]
