@@ -33,7 +33,7 @@ while controller.running:
     elif controller.state == AppState.WAITING_INPUT:
         controller.wait_new_product()
         if controller.flag_new_product:
-            controller.set_home_pose()
+            controller.set_home_pose() # TODO Move only the Z axis to the maximum
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
 

@@ -91,8 +91,7 @@ class Controller:
 
     def new_product(self):
         self.flag_new_product = False
-        self.operation_result = OperationResult.NONE
-        self.param_index = 0        
+        self.operation_result = OperationResult.NONE         
         self.component_index = 0
         self.pose_times = []
         self.parameters_found = False        
@@ -103,7 +102,7 @@ class Controller:
         logger.info(f"Collecting parameters for POPID {self.popid}")        
         # Print all Component Units Found on Database        
         self.parameter_list = self.dao.get_fake_parameters(self.popid)        
-        if len(self.parameter_list):
+        if len(self.parameter_list):            
             self.parameters_found = True            
 
     def start_job(self, component_number):
@@ -111,7 +110,7 @@ class Controller:
         self.selected_component = list(filter(lambda x: x['number'] == component_number, self.component_list))[0]
         self.job = Job(self.popid, component_number)
         params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
-        self.job.parameter_list = params
+        self.job.parameter_list = params        
         # self.tf_predictor.load_single_model(component_number)
         self.job.status = 1 # Create a enumerable for jobs
         self.pose_index = 0
@@ -119,7 +118,9 @@ class Controller:
         self.param_result = False
         self.predictions = []
         self.total_poses = len(self.selected_component['poses'])
-        logger.info(f"Job for component {self.selected_component['number']} started, number of poses = {self.total_poses}")        
+        logger.info(f"Job for component {self.selected_component['number']} started, number of poses = {self.total_poses}")
+        logger.info(f"Parameters {self.job.parameter_list}, Total: {len(self.job.parameter_list)}")
+
     
     def job_done(self):
         print('JOB DONE')
@@ -140,10 +141,6 @@ class Controller:
         print(pose_array)      
         pose = Pose(pose_array['joints'], speed=pose_array['speed'], acc=pose_array['acc'])        
         return pose
-        
-    def check_inspection(self):
-        index = self.pose_index
-        return self.selected_component['poses'][index]['has_inspection']
 
     def next_pose(self):
         self.param_result = False   
@@ -156,6 +153,10 @@ class Controller:
     def set_home_pose(self):
         home_pose = Pose(HOME_JOINTS, speed=1, acc=1)
         self.cobot.set_pose(home_pose)
+
+    def check_inspection(self):
+        index = self.pose_index
+        return self.selected_component['poses'][index]['has_inspection']
 
     def set_state(self, state: AppState):
         self.state = state
@@ -286,6 +287,9 @@ class Controller:
             self.param_result = True
         elif e.name == 'x': 
             logger.info('[COMMAND] Simulate Bypass Button')
+        elif e.name == 'p': 
+            logger.info('[COMMAND] Print Pose')
+            logger.info(f'{self.cobot.joints.get_joint_list()}')
             
     def get_cobot_status(self):
         return self.cobot.status
@@ -322,7 +326,8 @@ class Controller:
             info.parameter = self.parameter         
             info.life_beat_cobot = str(self.cobot.life_beat)
             info.manual = str(self.manual_mode)
-            # # Create a class with all kind of images
+            info.position_status = self.cobot.position_status.name
+            # Create a class with all kind of images
             info.message = '[INFO] Message Test'
             info.joints = str(self.cobot.joints.get_joint_list())            
             # info.results = self.results
