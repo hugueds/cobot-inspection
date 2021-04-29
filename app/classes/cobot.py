@@ -65,10 +65,11 @@ class Cobot:
     def get_pose(self) -> Joints:
         first_address = ModbusInterface.BASE_JOINT.value
         pose_array = self.__read_register(first_address, 6)
-        j = Joints.convert_mrad2rad_s(pose_array)
-        joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
-        self.joints = joints
-        return joints
+        if len(pose_array):
+            j = Joints.convert_mrad2rad_s(pose_array)
+            joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
+            self.joints = joints
+            return joints
 
     def set_pose(self, pose: Pose):
         first_address = ModbusInterface.POSE_BASE.value

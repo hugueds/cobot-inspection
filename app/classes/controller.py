@@ -177,16 +177,17 @@ class Controller:
             os.remove(f'{folder}/{f}')
 
     def process_image(self):        
-        expected_pred = self.job.parameter_list[self.param_index]        
+        self.parameter = self.job.parameter_list[self.param_index]
+        confidence_min = 0.6
         prediction = self.classify()
-        if prediction.label == expected_pred and prediction.confidence > 0.6: # Update confidence offset later
+        if prediction.label == self.parameter and prediction.confidence > confidence_min: # Update confidence offset later
             self.param_index = self.param_index + 1
             self.param_result = True
             logger.info('Inspection Result OK')
         else:
             self.param_result = False
             logger.info('Inspection Result NOK')
-            logger.info(f'Expected: {expected_pred}, Received: {prediction.label}')
+            logger.info(f'Expected: {self.parameter}, Received: {prediction.label}')
             # path = f'results/{self.popid}/{self.component_unit}/' IF OK
             # Path(path).mkdir(parents=True, exist_ok=True)
             # path = f'{path}/{image_file}'
@@ -318,9 +319,9 @@ class Controller:
 
     def update_camera_interface(self):
         logger.info('Starting Camera Update Interface')
-        info = CameraInfo()
+        info = CameraInfo() # Create a seperate class to handle this method
 
-        while self.running:
+        while self.running:            
             info.state = self.state.name
             info.cobot_status = self.cobot.status.name
             info.parameter = self.parameter         
@@ -333,10 +334,11 @@ class Controller:
             # info.results = self.results
             ut = str((datetime.now() - self.start_datetime).seconds)                
             info.uptime = ut
-            info.component_index = str(self.component_index)
+            info.component_index = str(self.component_index + 1)
             info.component_total = str(self.total_components)
             info.pose_index = str(self.pose_index + 1)
             info.pose_total = str(self.total_poses)
+            info.param = self.parameter
             if self.job:
                 info.component_unit = self.job.component_unit
                 info.popid = self.job.popid
@@ -344,7 +346,7 @@ class Controller:
                 info.parameter_index = str(self.param_index + 1)
                 info.parameter_total = str(self.total_param)
                 jt = str((datetime.now() - self.job.start_time).seconds)
-                info.jobtime = jt                
+                info.jobtime = jt
 
             self.camera.display_info(info)
         else: 
