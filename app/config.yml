@@ -10,7 +10,7 @@ controller:
   process_after_shot: True
   component_list: ['7500', '7817', '8734', '7506', '9382'] # Transfer to database
 camera:
-  src: 0
+  src: 1
   resolution: "640x480"
   window_size: [900, 700]
   full_screen: False

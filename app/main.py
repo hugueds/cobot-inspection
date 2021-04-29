@@ -67,6 +67,7 @@ while controller.running:
         if controller.get_position_status() == PositionStatus.POSE:
             if controller.pose_index >= controller.total_poses:
                 controller.job_done()
+                controller.set_home_pose()
                 controller.set_state(AppState.MOVING_TO_WAITING)
             else:
                 if controller.check_inspection():
@@ -79,12 +80,13 @@ while controller.running:
     elif controller.state == AppState.PROCESSING_IMAGE:
         logger.info("Collecting Image")
         controller.process_image()
+        sleep(1)
         if controller.param_result:  # Only move if the result match or someone request for it
             controller.next_pose()
             controller.set_state(AppState.MOVING_TO_POSE)
         else:
             logger.warn('Parameter not matched, redoing operation')
-            sleep(1)
+           
 
     elif controller.state == AppState.FINISHED:
         logger.info('All Component Jobs finished, Returning to Home Position')

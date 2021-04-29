@@ -14,7 +14,7 @@ from classes.barcode_scanner import BarcodeScanner
 from classes.camera import Camera
 from classes.cobot import Cobot
 from classes.tf_predictor import TFPredictor        
-from models import CameraInfo, Prediction, Job, Component
+from models import CameraInfo, Prediction, Job, Component, prediction
 from enumerables import CobotStatus, OperationResult
 from logger import logger
 from database.dao import DAO
@@ -111,7 +111,7 @@ class Controller:
         self.job = Job(self.popid, component_number)
         params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
         self.job.parameter_list = params        
-        # self.tf_predictor.load_single_model(component_number)
+        # self.tf_predictor.load_single_model(component_number) # Disable during tests
         self.job.status = 1 # Create a enumerable for jobs
         self.pose_index = 0
         self.param_index = 0
@@ -127,7 +127,7 @@ class Controller:
         # TODO: Create a report using the job results
         self.job.status = 2 # Create a enumerable for jobs
         self.component_index = self.component_index + 1
-        if self.component_index < self.total_components - 1:
+        if self.component_index < self.total_components:
             self.selected_component = self.component_list[self.component_index]
             self.start_job(self.selected_component['number'])
 
@@ -135,20 +135,18 @@ class Controller:
         # TODO Send Stop Signal to Cobot
         self.job.status = 3 # Create a enumerable for jobs     
 
-    def get_pose(self, component_unit, index) -> Pose:
-        # print(component_unit)
-        pose_array = component_unit['poses'][index]  
-        print(pose_array)      
+    def get_pose(self, component_unit, index) -> Pose:        
+        pose_array = component_unit['poses'][index]
         pose = Pose(pose_array['joints'], speed=pose_array['speed'], acc=pose_array['acc'])        
         return pose
 
     def next_pose(self):
-        self.param_result = False   
-        self.pose_index = self.pose_index + 1    
-        if self.pose_index < self.total_poses - 1:            
-            logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')
-            pose = self.get_pose(self.selected_component, self.pose_index)
-            self.cobot.set_pose(pose)
+        self.param_result = False
+        pose = self.get_pose(self.selected_component, self.pose_index)
+        self.cobot.set_pose(pose)   
+        self.pose_index = self.pose_index + 1
+        logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')            
+            
 
     def set_home_pose(self):
         home_pose = Pose(HOME_JOINTS, speed=1, acc=1)
@@ -156,6 +154,7 @@ class Controller:
 
     def check_inspection(self):
         index = self.pose_index
+        print('index', index)
         return self.selected_component['poses'][index]['has_inspection']
 
     def set_state(self, state: AppState):
@@ -226,8 +225,9 @@ class Controller:
 
     def classify(self) -> Prediction:
         image = self.camera.frame.copy()
-        prediction = self.tf_predictor.predict(image)
-        logger.info(f'{prediction.label}, {prediction.confidence}')
+        prediction = Prediction('test', 0.7) # Only for tests
+        # prediction = self.tf_predictor.predict(image) # Disable during test
+        logger.info(f'Classification - Label: {prediction.label}, ACC: {prediction.confidence}')
         return prediction
 
     def change_auto_man(self):
@@ -334,9 +334,9 @@ class Controller:
             # info.results = self.results
             ut = str((datetime.now() - self.start_datetime).seconds)                
             info.uptime = ut
-            info.component_index = str(self.component_index + 1)
+            info.component_index = str(self.component_index)
             info.component_total = str(self.total_components)
-            info.pose_index = str(self.pose_index + 1)
+            info.pose_index = str(self.pose_index)
             info.pose_total = str(self.total_poses)
             info.param = self.parameter
             if self.job:
