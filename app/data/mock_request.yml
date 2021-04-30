@@ -3,15 +3,7 @@ data:
   - popid: "999999"
     components:
       - number: "7500"
-        parameters:
-          [
-            "PV1R1011",
-            "PV1R1021",
-            "PV1R1031",
-            "PV1R1041",
-            "PV1R1051",
-            "PV1R1061",
-          ]
+        parameters: ["PV1R1011", "PV1R1021", "PV1R1031", "PV1R1041", "PV1R1051", "PV1R1061"]
       - number: "7817"
         parameters: ["1111111", "2222222", "3333333"]
       - number: "8734"

@@ -1,0 +1,69 @@
+---
+component_list:
+  - number: '7500'
+    sequence: 0
+    poses:
+      - sequence: 0
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.226, -1.531, -2.216, -0.804, 1.608, -0.647]
+      - sequence: 1
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.343, -1.956, -2.08, -0.167, 1.221, -2.461]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints:  [-2.497, -1.83, -2.399, -0.167, 1.221, -1.513]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints:  [-2.215, -1.543, -2.587, -0.761, 1.623, 0.175]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-1.92, -1.422, -2.467, -0.958, 2.106, 1.161]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints: [-2.153, -1.883, -1.921, -2.519, 0.991, 0.088]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints:  [-1.975, -1.946, -1.77, -2.481, 1.05, 0.088]
+      - sequence: 2
+        has_inspection: false
+        speed: 0.5
+        acc: 1.2
+        joints:   [-2.226, -1.531, -2.216, -0.804, 1.608, -0.647]
+  # - number: '7817'
+  #   sequence: 1
+  #   poses:
+  #   - sequence: 0 # Waiting position
+  #     has_inspection: false
+  #     speed: 0.5
+  #     acc: 1.2
+  #     joints: [-1.955, -1.26, -2.28, -1.087, 1.588, 0.0]
+  #   - sequence: 1
+  #     has_inspection: false
+  #     speed: 0.5
+  #     acc: 1.2
+  #     joints: [-2.303, -1.646, -1.887, -1.086, 1.587, 0.0]
+  #   - sequence: 2
+  #     has_inspection: false
+  #     speed: 0.5
+  #     acc: 1.2
+  #     joints: [-2.739, -1.454, -2.095, -1.087, 1.587, 0.0]
+  # - number: '8734'
+  #   sequence: 2
+  # - number: '7506'
+  #   sequence: 3
+  # - number: '9382'
+  #   sequence: 4
