@@ -24,6 +24,7 @@ class CameraInfo:
     parameter_total = ''
     pose_index = ''
     pose_total = ''
+    pose_name = ''
 
     def update(self, controller):
         self.state = controller.state.name

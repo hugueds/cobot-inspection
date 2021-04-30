@@ -52,6 +52,7 @@ class Controller:
     popid_buffer = []
     component_list = []
     parameter: str = ''
+    pose_name = ''
     selected_component = ''
     component_index = 0
     pose_index = 0
@@ -59,12 +60,16 @@ class Controller:
     param_index = 0
     total_param = 0
 
-    def __init__(self, debug=False, config='config.yml') -> None:        
+    def __init__(self, debug=False, config='config.yml') -> None: 
+        with open('config.yml') as f:
+            self.config = yaml.safe_load(f)['controller']
         self.debug = debug        
         self.load_component_list()
         self.barcode.start()        
         self.display_info()        
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
+        # Load valve order
+
 
     def load_component_list(self):
         logger.info('Loading List for Component Poses')
@@ -339,6 +344,7 @@ class Controller:
             info.pose_index = str(self.pose_index)
             info.pose_total = str(self.total_poses)
             info.param = self.parameter
+            info.pose_name = self.pose_name
             if self.job:
                 info.component_unit = self.job.component_unit
                 info.popid = self.job.popid

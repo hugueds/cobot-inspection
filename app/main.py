@@ -33,6 +33,7 @@ while controller.running:
     elif controller.state == AppState.WAITING_INPUT:
         controller.wait_new_product()
         if controller.flag_new_product:
+            # TODO Change home to waiting
             controller.set_home_pose() # TODO Move only the Z axis to the maximum
             controller.new_product()
             controller.set_state(AppState.LOADING_PARAMETERS)
@@ -50,6 +51,11 @@ while controller.running:
         first_component = controller.component_list[0]
         controller.start_job(first_component['number'])
         controller.set_state(AppState.MOVING_TO_WAITING)
+
+    elif controller.state == AppState.MOVING_TO_HOME:
+        if controller.get_position_status() == PositionStatus.HOME:
+            pass
+        pass
 
     elif controller.state == AppState.MOVING_TO_WAITING:
         logger.info("Moving to Waiting...")
