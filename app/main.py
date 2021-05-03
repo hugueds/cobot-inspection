@@ -48,8 +48,8 @@ while controller.running:
             controller.set_state(AppState.PARAMETER_NOT_FOUND)
 
     elif controller.state == AppState.PARAMETER_LOADED:
-        first_component = controller.component_list[0]
-        controller.start_job(first_component['number'])
+        first_component = controller.component_list_2[0]
+        controller.start_job(first_component.number)
         controller.set_state(AppState.MOVING_TO_WAITING)
 
     elif controller.state == AppState.MOVING_TO_HOME:

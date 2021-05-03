@@ -28,3 +28,6 @@ logs
 __pycache__
 */__pycache__
 */*/__pycache__
+
+
+app/*.csv

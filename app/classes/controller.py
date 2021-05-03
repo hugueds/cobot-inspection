@@ -49,6 +49,9 @@ class Controller:
     popid_buffer = []
     component_list = []
     component_list_2: List[Component] = []
+    record_poses: List[Pose] = []
+    record_pose_index = 0
+    record_pose = False
     parameter: str = ''
     pose_name = ''
     selected_component = ''
@@ -124,7 +127,7 @@ class Controller:
 
     def start_job(self, component_number):
         # TODO: Log the component loaded
-        self.selected_component = list(filter(lambda x: x['number'] == component_number, self.component_list_2))[0]        
+        self.selected_component = list(filter(lambda x: x.number == component_number, self.component_list_2))[0]        
         self.job = Job(self.popid, component_number)
         params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
         self.job.parameter_list = params
@@ -152,8 +155,8 @@ class Controller:
         # TODO Send Stop Signal to Cobot
         self.job.status = 3 # Create a enumerable for jobs     
 
-    def get_pose(self, component_unit, index) -> Pose:        
-        pose_array = component_unit['poses'][index]
+    def get_pose(self, index) -> Pose:        
+        pose_array = self.selected_component.poses[index]
         pose = Pose(pose_array['joints'], speed=pose_array['speed'], acc=pose_array['acc'])        
         return pose
 
@@ -308,6 +311,30 @@ class Controller:
         elif e.name == 'p': 
             logger.info('[COMMAND] Print Pose')
             logger.info(f'{self.cobot.joints.get_joint_list()}')
+        elif e.name == 'f10':
+            if not self.record_pose:
+                self.record_pose = True
+                self.record_pose_index = 0
+                self.record_poses = []
+                logger.info('[COMMAND] Start Recording Pose')
+            else:
+                self.record_pose = False                
+                date_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+                file = date_str + '_poses.csv'
+                with open(file, mode='w') as f:
+                    writer = csv.writer(f, delimiter=',', lineterminator = '\n')
+                    writer.writerow(['sequence','name','has_inspection','speed','acc','j1','j2','j3','j4','j5','j6'])
+                    for p in self.record_poses:
+                        j = p.joints
+                        writer.writerow([p.sequence,'default_name','false','1','1', j.base, j.shoulder, j.elbow, j.wrist_1, j.wrist_2, j.wrist_3])
+                logger.info(f'[COMMAND] Saving Poses to File {file}')
+        elif e.name == 'f11': 
+            logger.info(f'[COMMAND] Get Pose {self.record_pose_index}')
+            joints = self.cobot.get_pose()
+            print(joints.get_joint_list())
+            pose: Pose = Pose(joints.get_joint_list(), sequence=self.record_pose_index)
+            self.record_poses.append(pose)
+            self.record_pose_index = self.record_pose_index + 1
             
     def get_cobot_status(self):
         return self.cobot.status
@@ -345,6 +372,7 @@ class Controller:
             info.life_beat_cobot = str(self.cobot.life_beat)
             info.manual = str(self.manual_mode)
             info.position_status = self.cobot.position_status.name
+            info.pose_name = self.pose_name
             # Create a class with all kind of images
             info.message = '[INFO] Message Test'
             info.joints = str(self.cobot.joints.get_joint_list())            

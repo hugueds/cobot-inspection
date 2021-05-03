@@ -141,6 +141,7 @@ class Camera:
         cv.putText(info_frame, 'MANUAL: ' + info.manual, (s, p+10*o), font, 0.7, Color.WHITE, 2)
         cv.putText(info_frame, 'UPTIME: ' + info.uptime, (s, p+11*o), font, 0.7, Color.WHITE, 2)
         cv.putText(info_frame, f'POSE: {info.pose_index}/{info.pose_total}', (s, p+12*o), font, 0.7, Color.WHITE, 2)
+        cv.putText(info_frame, f'POSE  NAME: {info.pose_name}', (s, p+13*o), font, 0.7, Color.WHITE, 2)
         cv.putText(info_frame, 'JOINTS: ' + info.joints, (10, 600), font, 0.5, Color.CYAN, 2)
         
         cv.imshow('info', info_frame)
