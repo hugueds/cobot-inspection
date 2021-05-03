@@ -45,12 +45,14 @@ class Joints:
 
 
 class Pose(Joints):
-    def __init__(self, joints, speed: float = 1, acc: float = 0, has_inspection=False):
+    def __init__(self, joints: list, speed: float = 1, acc: float = 0, has_inspection=False, sequence=0, name=''):
         j = joints
         self.joints = Joints(j[0], j[1], j[2], j[3], j[4], j[5])
         self.has_inspection = has_inspection
         self.speed = speed
         self.acc = acc
+        self.sequence = sequence
+        self.name = name
 
     def get_joint_list(self) -> list:
         return self.joints.get_joint_list()

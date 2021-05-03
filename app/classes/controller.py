@@ -1,7 +1,7 @@
-from models.pose import Joints, Pose
 import os
 import json
 import yaml
+import csv
 import keyboard
 import cv2 as cv
 from typing import List
@@ -10,11 +10,8 @@ from threading import Thread
 from datetime import datetime
 from time import sleep
 from enumerables import AppState
-from classes.barcode_scanner import BarcodeScanner
-from classes.camera import Camera
-from classes.cobot import Cobot
-from classes.tf_predictor import TFPredictor        
-from models import CameraInfo, Prediction, Job, Component, prediction
+from classes import *
+from models import *
 from enumerables import CobotStatus, OperationResult
 from logger import logger
 from database.dao import DAO
@@ -51,6 +48,7 @@ class Controller:
     running = True
     popid_buffer = []
     component_list = []
+    component_list_2: List[Component] = []
     parameter: str = ''
     pose_name = ''
     selected_component = ''
@@ -64,7 +62,8 @@ class Controller:
         with open('config.yml') as f:
             self.config = yaml.safe_load(f)['controller']
         self.debug = debug        
-        self.load_component_list()
+        # self.load_component_list()
+        self.load_components()
         self.barcode.start()        
         self.display_info()        
         keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
@@ -81,6 +80,19 @@ class Controller:
         self.total_components = len(self.component_list)
         logger.info(f"Components Loaded: {[x['number'] for x in component_list]}, Total: {self.total_components}")
         # Convert component_list to Class of Components and Poses
+
+    def load_components(self):
+        logger.info('Loading Component from files')        
+        seq = 0
+        for c_number in self.config['components']:
+            component = Component(c_number, seq)
+            component.load_from_file()
+            self.component_list_2.append(component)
+            seq = seq + 1
+            logger.info(f'Component {c_number} loaded')
+        self.component_index = 0
+        self.total_components = len(self.component_list_2)       
+
 
     def connect_to_cobot(self):
         self.cobot.connect()
@@ -112,18 +124,18 @@ class Controller:
 
     def start_job(self, component_number):
         # TODO: Log the component loaded
-        self.selected_component = list(filter(lambda x: x['number'] == component_number, self.component_list))[0]
+        self.selected_component = list(filter(lambda x: x['number'] == component_number, self.component_list_2))[0]        
         self.job = Job(self.popid, component_number)
         params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
-        self.job.parameter_list = params        
+        self.job.parameter_list = params
         # self.tf_predictor.load_single_model(component_number) # Disable during tests
         self.job.status = 1 # Create a enumerable for jobs
         self.pose_index = 0
         self.param_index = 0
         self.param_result = False
         self.predictions = []
-        self.total_poses = len(self.selected_component['poses'])
-        logger.info(f"Job for component {self.selected_component['number']} started, number of poses = {self.total_poses}")
+        self.total_poses = len(self.selected_component.poses)
+        logger.info(f"Job for component {self.selected_component.number} started, number of poses = {self.total_poses}")
         logger.info(f"Parameters {self.job.parameter_list}, Total: {len(self.job.parameter_list)}")
 
     
@@ -133,8 +145,8 @@ class Controller:
         self.job.status = 2 # Create a enumerable for jobs
         self.component_index = self.component_index + 1
         if self.component_index < self.total_components:
-            self.selected_component = self.component_list[self.component_index]
-            self.start_job(self.selected_component['number'])
+            self.selected_component = self.component_list_2[self.component_index]
+            self.start_job(self.selected_component.number)
 
     def abort_job(self):
         # TODO Send Stop Signal to Cobot
