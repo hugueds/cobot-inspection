@@ -28,7 +28,6 @@ class Controller:
     operation_result: OperationResult = OperationResult.NONE
     job: Job = None
     dao = DAO()
-    barcode = BarcodeScanner()
     cobot = Cobot()
     camera = Camera()
     tf_predictor = TFPredictor()    
@@ -47,8 +46,7 @@ class Controller:
     popid = ''
     running = True
     popid_buffer = []
-    component_list = []
-    component_list_2: List[Component] = []
+    component_list: List[Component] = []
     record_poses: List[Pose] = []
     record_pose_index = 0
     record_pose = False
@@ -65,36 +63,24 @@ class Controller:
         with open('config.yml') as f:
             self.config = yaml.safe_load(f)['controller']
         self.debug = debug        
-        # self.load_component_list()
         self.load_components()
-        self.barcode.start()        
+        self.barcode = BarcodeScanner(self.config['serial_port'])
+        # self.barcode.start()
         self.display_info()        
-        keyboard.on_press(self.on_event)  # Verificar se o Leitor pode vir aqui
-        # Load valve order
-
-
-    def load_component_list(self):
-        logger.info('Loading List for Component Poses')
-        with open('data/component_list.yml') as f:
-            component_list = yaml.safe_load(f)['component_list']
-        component_list = sorted(component_list, key=lambda x: x['sequence'])
-        self.component_list = component_list
-        self.component_index = 0
-        self.total_components = len(self.component_list)
-        logger.info(f"Components Loaded: {[x['number'] for x in component_list]}, Total: {self.total_components}")
-        # Convert component_list to Class of Components and Poses
+        keyboard.on_press(self.on_event)
 
     def load_components(self):
         logger.info('Loading Component from files')        
         seq = 0
+        self.component_list.clear()
         for c_number in self.config['components']:
             component = Component(c_number, seq)
             component.load_from_file()
-            self.component_list_2.append(component)
+            self.component_list.append(component)
             seq = seq + 1
             logger.info(f'Component {c_number} loaded')
         self.component_index = 0
-        self.total_components = len(self.component_list_2)       
+        self.total_components = len(self.component_list)       
 
 
     def connect_to_cobot(self):
@@ -127,7 +113,7 @@ class Controller:
 
     def start_job(self, component_number):
         # TODO: Log the component loaded
-        self.selected_component = list(filter(lambda x: x.number == component_number, self.component_list_2))[0]        
+        self.selected_component = list(filter(lambda x: x.number == component_number, self.component_list))[0]        
         self.job = Job(self.popid, component_number)
         params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
         self.job.parameter_list = params
@@ -143,12 +129,12 @@ class Controller:
 
     
     def job_done(self):
-        print('JOB DONE')
+        logger.info('Job Done for component')
         # TODO: Create a report using the job results
         self.job.status = 2 # Create a enumerable for jobs
         self.component_index = self.component_index + 1
         if self.component_index < self.total_components:
-            self.selected_component = self.component_list_2[self.component_index]
+            self.selected_component = self.component_list[self.component_index]
             self.start_job(self.selected_component.number)
 
     def abort_job(self):
@@ -161,11 +147,11 @@ class Controller:
 
     def next_pose(self):
         self.param_result = False
-        pose = self.get_pose(self.pose_index)
-        self.cobot.set_pose(pose)   
         self.pose_index = self.pose_index + 1
-        
-        logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')         
+        if self.pose_index < self.total_poses:
+            pose = self.get_pose(self.pose_index)
+            self.cobot.set_pose(pose)
+            logger.info(f'Moving to POSE: {self.pose_index + 1} / {self.total_poses}')         
             
     def set_home_pose(self):
         home_pose = Pose(HOME_JOINTS, speed=1, acc=1)
@@ -277,10 +263,10 @@ class Controller:
 
     def on_event(self, e: keyboard.KeyboardEvent):
         logger.info(f'[EVENT] Key: {e.name} was pressed')
-        if e.name == 'm':
+        if e.name == 'f2':
             self.set_state(AppState.WAITING_INPUT)
             self.change_auto_man()
-        elif e.name == 'q':
+        elif e.name == 'f3':
             logger.info('[COMMAND] Closing the camera and quiting application')
             self.camera.stop()
             self.running = False
@@ -288,23 +274,23 @@ class Controller:
         elif e.name.isdigit() and self.manual_mode:
             logger.info('[COMMAND] Set Manual Program ' + e.name)
             self.set_program(int(e.name))
-        elif e.name == 't':
+        elif e.name == 'f4':
             logger.info('[COMMAND] Trigger After Pose')
             self.trigger_after_pose()
-        elif e.name == 's':
+        elif e.name == 'f5':
             logger.info('[COMMAND] Saving ScreenShot...')
             self.camera.save_screenshot(str(self.program))
-        elif e.name == 'n':
+        elif e.name == 'f6':
             logger.info('[COMMAND] New Flag')
             self.popid = '999999'
             self.flag_new_product = True
-        elif e.name == 'z':
+        elif e.name == 'f7':
             logger.info('[COMMAND] Classifing Image...')
             self.classify()
-        elif e.name == 'o':
+        elif e.name == 'f8':
             logger.info('[COMMAND] Simulate OK Inspection')
             self.param_result = True
-        elif e.name == 'x': 
+        elif e.name == 'f9': 
             logger.info('[COMMAND] Simulate Bypass Button')
         elif e.name == 'p': 
             logger.info('[COMMAND] Print Pose')
@@ -333,6 +319,8 @@ class Controller:
             pose: Pose = Pose(joints.get_joint_list(), sequence=self.record_pose_index)
             self.record_poses.append(pose)
             self.record_pose_index = self.record_pose_index + 1
+        elif e.name == 'f12':
+            self.load_components()
             
     def get_cobot_status(self):
         return self.cobot.status

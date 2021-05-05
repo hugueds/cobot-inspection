@@ -31,3 +31,7 @@ __pycache__
 
 
 app/*.csv
+
+
+app/data/poses/*
+data/poses/*

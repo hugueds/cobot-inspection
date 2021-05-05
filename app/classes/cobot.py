@@ -53,10 +53,10 @@ class Cobot:
         self.set_trigger()
 
     def set_trigger(self, value=1):
-        trigger = self.__read_register(ModbusInterface.START_TRIGGER.value)
+        trigger = self.__read_register(ModbusInterface.AC_TRIGGER.value)
         if value != trigger:
             self.trigger = value
-            self.__write_register(ModbusInterface.START_TRIGGER.value, value)
+            self.__write_register(ModbusInterface.AC_TRIGGER.value, value)
 
     def move_to_waiting(self):
         self.selected_program = 0
@@ -78,7 +78,7 @@ class Cobot:
         pose_array.append(int(pose.acc)   * 1000)
         pose_array.append(int(pose.speed) * 1000)        
         self.__write_register_array(first_address, pose_array)
-        self.__write_register(ModbusInterface.SET_POSE.value, 1)
+        self.__write_register(ModbusInterface.AC_TRIGGER.value, 1)
 
     def __read_register(self, address: int, count=1):
         try:

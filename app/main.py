@@ -48,7 +48,7 @@ while controller.running:
             controller.set_state(AppState.PARAMETER_NOT_FOUND)
 
     elif controller.state == AppState.PARAMETER_LOADED:
-        first_component = controller.component_list_2[0]
+        first_component = controller.component_list[0]
         controller.start_job(first_component.number)
         controller.set_state(AppState.MOVING_TO_WAITING)
 
@@ -65,7 +65,10 @@ while controller.running:
             elif controller.total_poses <= 0:
                 controller.job_done()
             else:
-                controller.next_pose()
+                # controller.first_pose()
+                # controller.next_pose()
+                pose = controller.get_pose(0)
+                controller.cobot.set_pose(pose)
                 controller.set_state(AppState.MOVING_TO_POSE)
 
     elif controller.state == AppState.MOVING_TO_POSE:

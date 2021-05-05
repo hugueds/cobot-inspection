@@ -26,7 +26,7 @@ class ModbusInterface(Enum):
     POSE_WRIST_3 = 141          # A -> HOW TO SET PROPERLY
     POSE_ACC = 142              # A -> 
     POSE_SPEED = 143            # A -> 
-    SET_POSE = 144              # A -> SET TO 1 C -> SET TO 0
+    AC_TRIGGER = 144              # A -> SET TO 1 C -> SET TO 0
     
 
     LIFE_BEAT_COBOT = 200   # C -> 0 - 65535 incremental

@@ -1,10 +1,9 @@
-from classes.barcode_scanner import BarcodeScanner
+from enumerables import modbus_interface
+from classes.cobot import Cobot
 from time import sleep
-# from serial import Serial
 
-b = BarcodeScanner()
-b.start()
+c = Cobot()
 
-while True:        
-    sleep(1)
-    
+c.connect()
+
+c.set_trigger(2)
