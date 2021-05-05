@@ -111,8 +111,9 @@ class Controller:
         if len(self.parameter_list):            
             self.parameters_found = True            
 
-    def start_job(self, component_number):
-        # TODO: Log the component loaded
+    def start_job(self, component_number=''):
+        if component_number == '':
+            component_number = self.component_list[0].number        
         self.selected_component = list(filter(lambda x: x.number == component_number, self.component_list))[0]        
         self.job = Job(self.popid, component_number)
         params = list(filter(lambda x: x['number'] == component_number, self.parameter_list))[0]['parameters']
@@ -144,6 +145,11 @@ class Controller:
     def get_pose(self, index) -> Pose:
         self.pose_name = self.selected_component.poses[index].name
         return self.selected_component.poses[index] 
+
+    def set_first_pose(self):
+        pose = self.get_pose(0)
+        self.cobot.set_pose(pose)
+        logger.info(f'Moving to POSE: 1 / {self.total_poses}')
 
     def next_pose(self):
         self.param_result = False
@@ -179,7 +185,8 @@ class Controller:
         for f in files:
             os.remove(f'{folder}/{f}')
 
-    def process_image(self):        
+    def process_image(self):
+        logger.info("Collecting Image...")
         self.parameter = self.job.parameter_list[self.param_index]
         confidence_min = 0.6
         prediction = self.classify()
@@ -189,8 +196,8 @@ class Controller:
             logger.info('Inspection Result OK')
         else:
             self.param_result = False
-            logger.info('Inspection Result NOK')
             logger.info(f'Expected: {self.parameter}, Received: {prediction.label}')
+            logger.info('Inspection Result didn\'t match, Redoing the operation')            
             # path = f'results/{self.popid}/{self.component_unit}/' IF OK
             # Path(path).mkdir(parents=True, exist_ok=True)
             # path = f'{path}/{image_file}'

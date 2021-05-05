@@ -1,5 +1,4 @@
 import argparse
-from datetime import datetime
 from time import sleep
 from logger import logger
 from classes import Controller
@@ -9,10 +8,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--debug', default=False, action='store_true')
 args = parser.parse_args()
 
-debug = args.debug
-
 logger.info('Starting Program...')
-controller = Controller(debug)
+controller = Controller(args.debug)
 
 while controller.running:
 
@@ -34,8 +31,8 @@ while controller.running:
         controller.wait_new_product()
         if controller.flag_new_product:
             # TODO Change home to waiting
-            controller.set_home_pose() # TODO Move only the Z axis to the maximum
             controller.new_product()
+            # controller.set_home_pose() # TODO Move only the Z axis to the maximum
             controller.set_state(AppState.LOADING_PARAMETERS)
 
     elif controller.state == AppState.LOADING_PARAMETERS:
@@ -48,14 +45,9 @@ while controller.running:
             controller.set_state(AppState.PARAMETER_NOT_FOUND)
 
     elif controller.state == AppState.PARAMETER_LOADED:
-        first_component = controller.component_list[0]
-        controller.start_job(first_component.number)
+        controller.set_home_pose() # TODO Move only the Z axis to the maximum
+        controller.start_job()
         controller.set_state(AppState.MOVING_TO_WAITING)
-
-    elif controller.state == AppState.MOVING_TO_HOME:
-        if controller.get_position_status() == PositionStatus.HOME:
-            pass
-        pass
 
     elif controller.state == AppState.MOVING_TO_WAITING:
         logger.info("Moving to Waiting...")
@@ -64,11 +56,8 @@ while controller.running:
                 controller.set_state(AppState.FINISHED)
             elif controller.total_poses <= 0:
                 controller.job_done()
-            else:
-                # controller.first_pose()
-                # controller.next_pose()
-                pose = controller.get_pose(0)
-                controller.cobot.set_pose(pose)
+            else:               
+                controller.set_first_pose()
                 controller.set_state(AppState.MOVING_TO_POSE)
 
     elif controller.state == AppState.MOVING_TO_POSE:
@@ -82,29 +71,24 @@ while controller.running:
                 if controller.check_inspection():
                     controller.set_state(AppState.PROCESSING_IMAGE)
                 else:
-                    controller.next_pose()
                     sleep(0.2)
-                    controller.set_state(AppState.MOVING_TO_POSE)
+                    controller.next_pose()
 
-    elif controller.state == AppState.PROCESSING_IMAGE:
-        logger.info("Collecting Image")
+    elif controller.state == AppState.PROCESSING_IMAGE:        
         controller.process_image()
         sleep(1)
         if controller.param_result:  # Only move if the result match or someone request for it
             controller.next_pose()
-            controller.set_state(AppState.MOVING_TO_POSE)
-        else:
-            logger.warn('Parameter not matched, redoing operation')
-           
+            controller.set_state(AppState.MOVING_TO_POSE)                       
 
     elif controller.state == AppState.FINISHED:
         logger.info('All Component Jobs finished, Returning to Home Position')
-        # TODO: Generate Report
-        # TODO: Log all next popids in the queue
+        controller.generate_report()        
         controller.set_home_pose()
-        # controller.set_state(AppState.MOVING_TO_HOME)
         controller.set_state(AppState.WAITING_INPUT)
+        # controller.set_state(AppState.MOVING_TO_HOME)
 
+    # TODO Conditions Below
 
     elif controller.state == AppState.MOVING_TO_HOME:
         if controller.get_position_status() == PositionStatus.POSE:
