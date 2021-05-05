@@ -45,7 +45,13 @@ class Camera:
         self.sharpness = cam_config['sharpness']
         self.inverted = cam_config['inverted']
 
-    def start(self):        
+    def update_config(self):
+        self.webcam.stream.set(cv.CAP_PROP_BRIGHTNESS,  self.brightness)    # min: 0 max: 255
+        self.webcam.stream.set(cv.CAP_PROP_SHARPNESS,   self.sharpness)     # min: 0 max: 255
+        self.webcam.stream.set(cv.CAP_PROP_CONTRAST,    self.contrast)      # min: 0 max: 255
+        self.webcam.stream.set(cv.CAP_PROP_SATURATION,  self.saturation)    # min: 0 max: 255
+        
+    def start(self):
         self.thread = Thread(target=self.update, daemon=True)
         self.thread.start()
 
