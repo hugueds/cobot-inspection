@@ -20,11 +20,11 @@ class Component:
             reader = csv.DictReader(file)
             for row in reader:
                 seq = int(row['sequence'])
-                hi = True if row['has_inspection'].lower == 'true' else False
+                hi = True if row['has_inspection'].lower == 'yes' else False
                 speed = float(row['speed'])
                 acc = float(row['acc'])
-                joints = [row['j1'], row['j2'], row['j3'],
-                          row['j4'], row['j5'], row['j6']]
+                joints = [float(row['j1']), float(row['j2']), float(row['j3']),
+                          float(row['j4']), float(row['j5']), float(row['j6'])]
 
                 pose = Pose(joints=joints, acc=acc, has_inspection=hi,
                             speed=speed, sequence=seq, name=row['name'])

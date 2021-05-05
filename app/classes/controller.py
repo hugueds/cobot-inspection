@@ -155,27 +155,25 @@ class Controller:
         # TODO Send Stop Signal to Cobot
         self.job.status = 3 # Create a enumerable for jobs     
 
-    def get_pose(self, index) -> Pose:        
-        pose_array = self.selected_component.poses[index]
-        pose = Pose(pose_array['joints'], speed=pose_array['speed'], acc=pose_array['acc'])        
-        return pose
+    def get_pose(self, index) -> Pose:
+        self.pose_name = self.selected_component.poses[index].name
+        return self.selected_component.poses[index] 
 
     def next_pose(self):
         self.param_result = False
-        pose = self.get_pose(self.selected_component, self.pose_index)
+        pose = self.get_pose(self.pose_index)
         self.cobot.set_pose(pose)   
         self.pose_index = self.pose_index + 1
-        logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')            
+        
+        logger.info(f'Moving to POSE: {self.pose_index}/{self.total_poses}')         
             
-
     def set_home_pose(self):
         home_pose = Pose(HOME_JOINTS, speed=1, acc=1)
         self.cobot.set_pose(home_pose)
 
     def check_inspection(self):
         index = self.pose_index
-        print('index', index)
-        return self.selected_component['poses'][index]['has_inspection']
+        return self.selected_component.poses[index].has_inspection
 
     def set_state(self, state: AppState):
         self.state = state
@@ -326,7 +324,7 @@ class Controller:
                     writer.writerow(['sequence','name','has_inspection','speed','acc','j1','j2','j3','j4','j5','j6'])
                     for p in self.record_poses:
                         j = p.joints
-                        writer.writerow([p.sequence,'default_name','false','1','1', j.base, j.shoulder, j.elbow, j.wrist_1, j.wrist_2, j.wrist_3])
+                        writer.writerow([p.sequence * 10,'default_name','no','1','1', j.base, j.shoulder, j.elbow, j.wrist_1, j.wrist_2, j.wrist_3])
                 logger.info(f'[COMMAND] Saving Poses to File {file}')
         elif e.name == 'f11': 
             logger.info(f'[COMMAND] Get Pose {self.record_pose_index}')

@@ -99,7 +99,9 @@ while controller.running:
         # TODO: Generate Report
         # TODO: Log all next popids in the queue
         controller.set_home_pose()
-        controller.set_state(AppState.MOVING_TO_HOME)
+        # controller.set_state(AppState.MOVING_TO_HOME)
+        controller.set_state(AppState.WAITING_INPUT)
+
 
     elif controller.state == AppState.MOVING_TO_HOME:
         if controller.get_position_status() == PositionStatus.POSE:

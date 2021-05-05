@@ -20,10 +20,13 @@ class Camera:
     webcam: WebcamVideoStream
 
     def __init__(self, config_path='config.yml'):
-        self.load_config(config_path)        
+        self.load_config(config_path)                
+        self.open()
+
+    def open(self):
         if not self.debug:
-            self.webcam = WebcamVideoStream(self.src, 'WebCam')
-            self.webcam.start()
+            self.webcam = WebcamVideoStream(self.src, 'WebCam').start()
+            # self.webcam.start()
 
     def load_config(self, config_path='config.yml'):
         with open(config_path, 'r') as file:
@@ -73,7 +76,6 @@ class Camera:
 
         except Exception as e:
             logger.error(e)
-            self.webcam.stop()
             sleep(5)
             logger.info('Trying to reopen the camera')            
             self.webcam = WebcamVideoStream(self.src, 'WebCam').start()

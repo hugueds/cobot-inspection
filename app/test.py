@@ -1,12 +1,10 @@
-from classes import Controller
+from classes.barcode_scanner import BarcodeScanner
+from time import sleep
+# from serial import Serial
 
+b = BarcodeScanner()
+b.start()
 
-c = Controller()
-
-
-
-
-
-
-
-
+while True:        
+    sleep(1)
+    

@@ -8,7 +8,8 @@ debug: False
 controller:
   debug_model: False
   process_after_shot: True
-  components: ['7500','8734','7817', '7506', '9382'] # Transfer to database
+  serial_port: 'COM5'
+  components: ['7500','8734'] #,'7817', '7506', '9382'] # Transfer to database
 camera:
   src: 0
   resolution: "640x480"
