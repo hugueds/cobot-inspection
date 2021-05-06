@@ -38,3 +38,4 @@ app/data/poses/*.*
 data/poses/*
 .csv
 app/*/*.csv
+~*
